@@ -1,6 +1,8 @@
 "use client"
 
 import * as React from "react"
+import Search from "./search"
+import { useCallback } from "react"
 import {
   DndContext,
   KeyboardSensor,
@@ -21,20 +23,6 @@ import {
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import {
-  IconChevronDown,
-  IconChevronLeft,
-  IconChevronRight,
-  IconChevronsLeft,
-  IconChevronsRight,
-  IconCircleCheckFilled,
-  IconDotsVertical,
-  IconGripVertical,
-  IconLayoutColumns,
-  IconLoader,
-  IconPlus,
-  IconTrendingUp,
-} from "@tabler/icons-react"
-import {
   ColumnDef,
   ColumnFiltersState,
   Row,
@@ -49,6 +37,20 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
+import {
+  CheckCircle2Icon,
+  ChevronDownIcon, // Giữ lại icon này
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronsLeftIcon,
+  ChevronsRightIcon,
+  ColumnsIcon,
+  GripVerticalIcon,
+  LoaderIcon,
+  MoreVerticalIcon,
+  PlusIcon,
+  TrendingUpIcon,
+} from "lucide-react"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 import { toast } from "sonner"
 import { z } from "zod"
@@ -64,22 +66,14 @@ import {
 } from "@/components/ui/chart"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer"
-import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuRadioGroup, // Thêm để lọc trạng thái
+  DropdownMenuRadioItem // Thêm để lọc trạng thái
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -91,6 +85,16 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 import {
   Table,
   TableBody,
@@ -106,32 +110,41 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 
-import {
-  IconHourglassLow, // Ví dụ icon cho "Đang theo dõi"
-  IconSend, // Ví dụ icon cho "Mới"
-  IconUserPlus // Ví dụ icon cho "Đăng ký học"
-} from "@tabler/icons-react"
-import Search from "./search"
-import { useCallback } from "react"
-
-// Trong file định nghĩa schema của bạn (ví dụ: data-table.tsx hoặc riêng biệt)
+// Cập nhật schema để khớp với cấu trúc JSON của bạn
 export const schema = z.object({
-  id: z.number(),
-  hoTen: z.string(),
-  lienHe: z.string(),
-  khoaHoc: z.string(),
-  kenh: z.string(),
-  trangThai: z.enum([
-    "Mới",
-    "Đã tư vấn",
-    "Đang theo dõi",
-    "Đăng ký học",
-    "Đã đăng ký",
-    "Đang tư vấn",
-    "Tiềm năng",
-    "Hủy"
-  ]),
-});
+  student_id: z.number(),
+  student_name: z.string(),
+  email: z.string().email().nullable(), // Đã thêm .nullable()
+  phone_number: z.string(),
+  zalo_phone: z.string().nullable(),
+  link_facebook: z.string().url().nullable(),
+  date_of_birth: z.string(),
+  current_education_level: z.string(),
+  other_education_level_description: z.string().nullable(),
+  high_school_name: z.string().nullable(), // Đã thêm .nullable()
+  city: z.string(),
+  source: z.string(),
+  other_source_description: z.string().nullable(),
+  notification_consent: z.string(),
+  other_notification_consent_description: z.string().nullable(),
+  current_status: z.string(),
+  status_change_date: z.string(),
+  registration_date: z.string().nullable(),
+  student_created_at: z.string(),
+  student_updated_at: z.string(),
+  assigned_counselor_name: z.string(),
+  assigned_counselor_email: z.string().email(),
+  assigned_counselor_type: z.string(),
+  interested_courses_details: z.string().nullable(),
+  enrolled_courses_details: z.string().nullable(),
+  student_status_history: z.string().nullable(),
+  last_consultation_date: z.string().nullable(),
+  last_consultation_duration_minutes: z.number().nullable(),
+  last_consultation_notes: z.string().nullable(),
+  last_consultation_type: z.string().nullable(),
+  last_consultation_status: z.string().nullable(),
+  last_consultation_counselor_name: z.string().nullable(),
+})
 
 // Create a separate component for the drag handle
 function DragHandle({ id }: { id: number }) {
@@ -145,32 +158,19 @@ function DragHandle({ id }: { id: number }) {
       {...listeners}
       variant="ghost"
       size="icon"
-      className="text-muted-foreground size-7 hover:bg-transparent"
+      className="size-7 text-muted-foreground hover:bg-transparent"
     >
-      <IconGripVertical className="text-muted-foreground size-3" />
+      <GripVerticalIcon className="size-3 text-muted-foreground" />
       <span className="sr-only">Drag to reorder</span>
     </Button>
   )
 }
-const ALL_TRANG_THAI = [
-  "Mới",
-  "Đã tư vấn",
-  "Đang theo dõi",
-  "Đăng ký học",
-  "Đã đăng ký",
-  "Đang tư vấn",
-  "Tiềm năng",
-  "Hủy",
-];
 
 const columns: ColumnDef<z.infer<typeof schema>>[] = [
-  // Giữ cột drag và select nếu bạn muốn chức năng này
   {
     id: "drag",
     header: () => null,
-    cell: ({ row }) => <DragHandle id={row.original.id} />,
-    enableSorting: false,
-    enableHiding: false,
+    cell: ({ row }) => <DragHandle id={row.original.student_id} />,
   },
   {
     id: "select",
@@ -198,169 +198,154 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
     enableSorting: false,
     enableHiding: false,
   },
-  // Cột "Họ tên"
   {
-    accessorKey: "hoTen",
-    header: "Họ tên",
-    cell: ({ row }) => <div className="font-medium">{row.original.hoTen}</div>,
+    accessorKey: "student_name", // Thay đổi từ "header"
+    header: "Tên Sinh Viên", // Thay đổi tiêu đề
+    cell: ({ row }) => {
+      return <TableCellViewer item={row.original} />
+    },
     enableHiding: false,
   },
-  // Cột "Liên hệ"
   {
-    accessorKey: "lienHe",
-    header: "Liên hệ",
-    cell: ({ row }) => <div className="font-medium">{row.original.lienHe}</div>,
-  },
-  // Cột "Khóa học"
-  {
-    accessorKey: "khoaHoc",
-    header: "Khóa học",
-    cell: ({ row }) => <div className="text-muted-foreground">{row.original.khoaHoc}</div>,
-  },
-  // Cột "Kênh"
-  {
-    accessorKey: "kenh",
-    header: "Kênh",
+    accessorKey: "current_education_level", // Thay đổi từ "type"
+    header: "Trình Độ Học Vấn", // Thay đổi tiêu đề
     cell: ({ row }) => (
-      <Badge variant="secondary" className="px-1.5">
-        {row.original.kenh}
+      <div className="w-32">
+        <Badge variant="outline" className="px-1.5 text-muted-foreground">
+          {row.original.current_education_level}
+        </Badge>
+      </div>
+    ),
+  },
+  {
+    accessorKey: "current_status", // Thay đổi từ "status"
+    header: ({ column }) => { // Sửa đổi header để có nút lọc
+      const currentFilter = column.getFilterValue() as string | undefined;
+
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="-ml-3 h-8 data-[state=open]:bg-accent"
+            >
+              <span>Trạng Thái</span>
+              <ChevronDownIcon className="ml-2 size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-[150px]">
+            <DropdownMenuRadioGroup
+              value={currentFilter}
+              onValueChange={(value) => {
+                column.setFilterValue(value === "all" ? undefined : value);
+              }}
+            >
+              <DropdownMenuRadioItem value="all">Tất cả</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="Lead">Lead</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="Engaging">Engaging</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="Enrolled">Enrolled</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="Dropped Out">Dropped Out</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="Completed">Completed</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    },
+    cell: ({ row }) => (
+      <Badge
+        variant="outline"
+        className="flex gap-1 px-1.5 text-muted-foreground [&_svg]:size-3"
+      >
+        {row.original.current_status === "Engaging" ? (
+          <CheckCircle2Icon className="text-green-500 dark:text-green-400" />
+        ) : (
+          <LoaderIcon />
+        )}
+        {row.original.current_status}
       </Badge>
     ),
   },
   {
-    accessorKey: "trangThai",
-    header: ({ column }) => { // Thêm { column } vào đây để truy cập các hàm của cột
-      const filterValue = column.getFilterValue();
-      const currentTrangThai = typeof filterValue === 'string' ? filterValue : '';
-
-      return (
-        <div className="flex items-center">
-          <span>Trạng thái</span>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="ml-2 h-8 w-8 p-0"
-                aria-label="Filter status"
-              >
-                <IconChevronDown className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-48">
-              <DropdownMenuItem
-                onClick={() => column.setFilterValue(undefined)} // Xóa bộ lọc
-                className={!currentTrangThai ? "font-bold" : ""}
-              >
-                Tất cả
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              {ALL_TRANG_THAI.map((status) => (
-                <DropdownMenuItem
-                  key={status}
-                  onClick={() => column.setFilterValue(status)}
-                  className={currentTrangThai === status ? "font-bold" : ""}
-                >
-                  {status}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      );
-    },
+    accessorKey: "phone_number",
+    header: "Số Điện Thoại",
+    cell: ({ row }) => row.original.phone_number,
+  },
+  {
+    accessorKey: "email",
+    header: "Email",
+    cell: ({ row }) => row.original.email,
+  },
+  {
+    accessorKey: "last_consultation_date",
+    header: "Ngày tư vấn gần nhất",
+    cell: ({ row }) => row.original.last_consultation_date,
+  },
+  {
+    accessorKey: "source",
+    header: "Nguồn",
+    cell: ({ row }) => row.original.source,
+  },
+  {
+    accessorKey: "assigned_counselor_name",
+    header: "Người Tư Vấn",
     cell: ({ row }) => {
-      const trangThai = row.original.trangThai;
-      let variant: "outline" | "secondary" | "destructive" | "success" | "info" | "warning";
-      let icon = null;
-      let textColor = "text-muted-foreground";
+      const isAssigned = row.original.assigned_counselor_name !== "" && row.original.assigned_counselor_name !== null
 
-      switch (trangThai) {
-        case "Mới":
-          variant = "secondary";
-          icon = <IconSend className="mr-1 size-3.5" />;
-          textColor = "text-blue-600 dark:text-blue-400";
-          break;
-        case "Đã tư vấn":
-          variant = "outline";
-          icon = <IconCircleCheckFilled className="fill-blue-500 dark:fill-blue-400 mr-1 size-3.5" />;
-          textColor = "text-blue-500 dark:text-blue-400";
-          break;
-        case "Đang theo dõi":
-          variant = "outline";
-          icon = <IconHourglassLow className="text-orange-500 dark:text-orange-400 mr-1 size-3.5" />;
-          textColor = "text-orange-500 dark:text-orange-400";
-          break;
-        case "Đăng ký học":
-          variant = "outline";
-          icon = <IconUserPlus className="text-green-500 dark:text-green-400 mr-1 size-3.5" />;
-          textColor = "text-green-500 dark:text-green-400";
-          break;
-        case "Đã đăng ký":
-          variant = "outline";
-          icon = <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400 mr-1 size-3.5" />;
-          textColor = "text-green-500 dark:text-green-400";
-          break;
-        case "Đang tư vấn":
-          variant = "outline";
-          icon = <IconLoader className="mr-1 size-3.5" />;
-          textColor = "text-yellow-600 dark:text-yellow-400";
-          break;
-        case "Tiềm năng":
-          variant = "secondary";
-          icon = <IconTrendingUp className="text-purple-500 dark:text-purple-400 mr-1 size-3.5" />;
-          textColor = "text-purple-500 dark:text-purple-400";
-          break;
-        case "Hủy":
-          variant = "destructive";
-          icon = null;
-          textColor = "text-red-500 dark:text-red-400";
-          break;
-        default:
-          variant = "outline";
-          icon = null;
-          textColor = "text-muted-foreground";
-          break;
+      if (isAssigned) {
+        return row.original.assigned_counselor_name
       }
 
       return (
-        <Badge variant={variant} className={`${textColor} px-1.5`}>
-          {icon}
-          {trangThai}
-        </Badge>
-      );
+        <>
+          <Label htmlFor={`${row.original.student_id}-counselor`} className="sr-only">
+            Người Tư Vấn
+          </Label>
+          <Select>
+            <SelectTrigger
+              className="h-8 w-40"
+              id={`${row.original.student_id}-counselor`}
+            >
+              <SelectValue placeholder="Gán người tư vấn" />
+            </SelectTrigger>
+            <SelectContent align="end">
+              <SelectItem value="Trần Thị B">Trần Thị B</SelectItem>
+              <SelectItem value="Lê Văn C">Lê Văn C</SelectItem>
+            </SelectContent>
+          </Select>
+        </>
+      )
     },
-    enableColumnFilter: true,
   },
-  // Cột "Hành động"
   {
     id: "actions",
-    cell: ({ row }) => (
+    cell: () => (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
+            className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
             size="icon"
           >
-            <IconDotsVertical />
+            <MoreVerticalIcon />
             <span className="sr-only">Open menu</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem>Edit</DropdownMenuItem> {/* Giữ lại để tích hợp chức năng chỉnh sửa */}
-          <DropdownMenuItem>Make a copy</DropdownMenuItem>
-          <DropdownMenuItem>Favorite</DropdownMenuItem>
+          <DropdownMenuItem>Chỉnh Sửa</DropdownMenuItem>
+          <DropdownMenuItem>Tạo Bản Sao</DropdownMenuItem>
+          <DropdownMenuItem>Thêm vào Yêu Thích</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
+          <DropdownMenuItem>Xóa</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     ),
   },
-];
+]
 
 function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
-    id: row.original.id,
+    id: row.original.student_id,
   })
 
   return (
@@ -408,7 +393,7 @@ export function DataTable({
   )
 
   const dataIds = React.useMemo<UniqueIdentifier[]>(
-    () => data?.map(({ id }) => id) || [],
+    () => data?.map(({ student_id }) => student_id) || [],
     [data]
   )
 
@@ -422,7 +407,7 @@ export function DataTable({
       columnFilters,
       pagination,
     },
-    getRowId: (row) => row.id.toString(),
+    getRowId: (row) => row.student_id.toString(),
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
@@ -442,36 +427,11 @@ export function DataTable({
     // Lưu ý: React-table sẽ tự động xử lý việc này và không gây re-render nếu giá trị không thay đổi
     // Tuy nhiên, nếu bạn muốn clear filter khi searchTerm rỗng, bạn có thể kiểm tra:
     if (searchTerm) {
-      table.getColumn('hoTen')?.setFilterValue(searchTerm);
+      table.getColumn('student_name')?.setFilterValue(searchTerm);
     } else {
-      table.getColumn('hoTen')?.setFilterValue(undefined); // Xóa bộ lọc khi input rỗng
+      table.getColumn('student_name')?.setFilterValue(undefined); // Xóa bộ lọc khi input rỗng
     }
   }, [table]);
-
-  // const tables = useReactTable({
-  //   data,
-  //   columns,
-  //   state: {
-  //     sorting,
-  //     columnVisibility,
-  //     rowSelection,
-  //     columnFilters, // Quan trọng: Đảm bảo columnFilters được truyền vào state
-  //     pagination,
-  //   },
-  //   getCoreRowModel: getCoreRowModel(),
-  //   enableRowSelection: true,
-  //   onRowSelectionChange: setRowSelection,
-  //   onSortingChange: setSorting,
-  //   onColumnFiltersChange: setColumnFilters, // Quan trọng: Cập nhật hàm này
-  //   onColumnVisibilityChange: setColumnVisibility,
-  //   onPaginationChange: setPagination,
-  //   getFilteredRowModel: getFilteredRowModel(), // Cần để lọc dữ liệu
-  //   getPaginationRowModel: getPaginationRowModel(),
-  //   getSortedRowModel: getSortedRowModel(),
-  //   getFacetedRowModel: getFacetedRowModel(),
-  //   getFacetedUniqueValues: getFacetedUniqueValues(),
-  // })
-
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
@@ -486,47 +446,40 @@ export function DataTable({
 
   return (
     <Tabs
-      defaultValue="outline"
-      className="w-full flex-col justify-start gap-6"
+      defaultValue="overview"
+      className="flex w-full flex-col justify-start gap-6"
     >
       <div className="flex items-center justify-between px-4 lg:px-6">
         <Label htmlFor="view-selector" className="sr-only">
           View
         </Label>
-        <Select defaultValue="outline">
+        <Select defaultValue="overview">
           <SelectTrigger
-            className="flex w-fit @4xl/main:hidden"
-            size="sm"
+            className="@4xl/main:hidden flex w-fit"
             id="view-selector"
           >
             <SelectValue placeholder="Select a view" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="outline">Danh sách tư vấn tuyển sinh</SelectItem>
-            {/* <SelectItem value="past-performance">Past Performance</SelectItem>
-            <SelectItem value="key-personnel">Key Personnel</SelectItem>
-            <SelectItem value="focus-documents">Focus Documents</SelectItem> */}
+            <SelectItem value="overview">Tổng Quan</SelectItem>
+
           </SelectContent>
         </Select>
-        <TabsList className="**:data-[slot=badge]:bg-muted-foreground/30 hidden **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1 @4xl/main:flex">
-          <TabsTrigger value="outline">Danh sách tư vấn tuyển sinh</TabsTrigger>
-          {/* <TabsTrigger value="past-performance">
-            Past Performance <Badge variant="secondary">3</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="key-personnel">
-            Key Personnel <Badge variant="secondary">2</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="focus-documents">Focus Documents</TabsTrigger> */}
+        <TabsList className="@4xl/main:flex hidden">
+          <TabsTrigger value="overview">Tổng Quan</TabsTrigger>
+
+
+
         </TabsList>
         <div className="flex items-center gap-2">
           <Search onSearch={handleSearch} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
-                <IconLayoutColumns />
-                <span className="hidden lg:inline">Ẩn/hiện cột</span>
-                <span className="lg:hidden">Columns</span>
-                <IconChevronDown />
+                <ColumnsIcon />
+                <span className="hidden lg:inline">Tùy Chỉnh Cột</span>
+                <span className="lg:hidden">Cột</span>
+                <ChevronDownIcon />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -554,13 +507,13 @@ export function DataTable({
             </DropdownMenuContent>
           </DropdownMenu>
           <Button variant="outline" size="sm">
-            <IconPlus />
-            <span className="hidden lg:inline">Thêm học viên</span>
+            <PlusIcon />
+            <span className="hidden lg:inline">Thêm Sinh Viên</span>
           </Button>
         </div>
       </div>
       <TabsContent
-        value="outline"
+        value="overview"
         className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6"
       >
         <div className="overflow-hidden rounded-lg border">
@@ -572,7 +525,7 @@ export function DataTable({
             id={sortableId}
           >
             <Table>
-              <TableHeader className="bg-muted sticky top-0 z-10">
+              <TableHeader className="sticky top-0 z-10 bg-muted">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => {
@@ -606,7 +559,7 @@ export function DataTable({
                       colSpan={columns.length}
                       className="h-24 text-center"
                     >
-                      No results.
+                      Không có kết quả.
                     </TableCell>
                   </TableRow>
                 )}
@@ -615,14 +568,14 @@ export function DataTable({
           </DndContext>
         </div>
         <div className="flex items-center justify-between px-4">
-          <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
-            {table.getFilteredSelectedRowModel().rows.length} of{" "}
-            {table.getFilteredRowModel().rows.length} row(s) selected.
+          <div className="hidden flex-1 text-sm text-muted-foreground lg:flex">
+            {table.getFilteredSelectedRowModel().rows.length} trong{" "}
+            {table.getFilteredRowModel().rows.length} hàng đã chọn.
           </div>
           <div className="flex w-full items-center gap-8 lg:w-fit">
             <div className="hidden items-center gap-2 lg:flex">
               <Label htmlFor="rows-per-page" className="text-sm font-medium">
-                Rows per page
+                Số hàng mỗi trang
               </Label>
               <Select
                 value={`${table.getState().pagination.pageSize}`}
@@ -630,7 +583,7 @@ export function DataTable({
                   table.setPageSize(Number(value))
                 }}
               >
-                <SelectTrigger size="sm" className="w-20" id="rows-per-page">
+                <SelectTrigger className="w-20" id="rows-per-page">
                   <SelectValue
                     placeholder={table.getState().pagination.pageSize}
                   />
@@ -645,7 +598,7 @@ export function DataTable({
               </Select>
             </div>
             <div className="flex w-fit items-center justify-center text-sm font-medium">
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
+              Trang {table.getState().pagination.pageIndex + 1} của{" "}
               {table.getPageCount()}
             </div>
             <div className="ml-auto flex items-center gap-2 lg:ml-0">
@@ -655,8 +608,8 @@ export function DataTable({
                 onClick={() => table.setPageIndex(0)}
                 disabled={!table.getCanPreviousPage()}
               >
-                <span className="sr-only">Go to first page</span>
-                <IconChevronsLeft />
+                <span className="sr-only">Đi đến trang đầu tiên</span>
+                <ChevronsLeftIcon />
               </Button>
               <Button
                 variant="outline"
@@ -665,8 +618,8 @@ export function DataTable({
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
               >
-                <span className="sr-only">Go to previous page</span>
-                <IconChevronLeft />
+                <span className="sr-only">Đi đến trang trước</span>
+                <ChevronLeftIcon />
               </Button>
               <Button
                 variant="outline"
@@ -675,8 +628,8 @@ export function DataTable({
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
               >
-                <span className="sr-only">Go to next page</span>
-                <IconChevronRight />
+                <span className="sr-only">Đi đến trang tiếp theo</span>
+                <ChevronRightIcon />
               </Button>
               <Button
                 variant="outline"
@@ -685,205 +638,185 @@ export function DataTable({
                 onClick={() => table.setPageIndex(table.getPageCount() - 1)}
                 disabled={!table.getCanNextPage()}
               >
-                <span className="sr-only">Go to last page</span>
-                <IconChevronsRight />
+                <span className="sr-only">Đi đến trang cuối cùng</span>
+                <ChevronsRightIcon />
               </Button>
             </div>
           </div>
         </div>
       </TabsContent>
-      {/* <TabsContent
-        value="past-performance"
-        className="flex flex-col px-4 lg:px-6"
-      >
-        <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
-      </TabsContent>
-      <TabsContent value="key-personnel" className="flex flex-col px-4 lg:px-6">
-        <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
-      </TabsContent>
-      <TabsContent
-        value="focus-documents"
-        className="flex flex-col px-4 lg:px-6"
-      >
-        <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
-      </TabsContent> */}
+
+
+
     </Tabs>
   )
 }
 
 const chartData = [
-  { month: "January", desktop: 186, mobile: 80 },
-  { month: "February", desktop: 305, mobile: 200 },
-  { month: "March", desktop: 237, mobile: 120 },
-  { month: "April", desktop: 73, mobile: 190 },
-  { month: "May", desktop: 209, mobile: 130 },
-  { month: "June", desktop: 214, mobile: 140 },
+  { month: "Tháng 1", visitors: 186 },
+  { month: "Tháng 2", visitors: 305 },
+  { month: "Tháng 3", visitors: 237 },
+  { month: "Tháng 4", visitors: 73 },
+  { month: "Tháng 5", visitors: 209 },
+  { month: "Tháng 6", visitors: 214 },
 ]
 
 const chartConfig = {
-  desktop: {
-    label: "Desktop",
-    color: "var(--primary)",
-  },
-  mobile: {
-    label: "Mobile",
+  visitors: {
+    label: "Lượt truy cập",
     color: "var(--primary)",
   },
 } satisfies ChartConfig
 
-function TableCellViewer({ item, onSave }: {
-  item: z.infer<typeof schema>;
-  onSave: (updatedItem: z.infer<typeof schema>) => Promise<void>;
-}) {
-  const isMobile = useIsMobile();
-  // Khởi tạo formData với item ban đầu, đảm bảo nó có kiểu đúng
-  const [formData, setFormData] = React.useState<z.infer<typeof schema>>(item);
-  const [isSaving, setIsSaving] = React.useState(false);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setFormData(prev => ({ ...prev, [id]: value }));
-  };
-
-  // Cập nhật handleSelectChange để ép kiểu 'trangThai'
-  const handleSelectChange = (id: keyof z.infer<typeof schema>) => (value: string) => {
-    // Nếu id là 'trangThai', ép kiểu value sang z.infer<typeof schema>['trangThai']
-    if (id === 'trangThai') {
-      // Kiểm tra xem value có phải là một giá trị hợp lệ trong enum không
-      if (ALL_TRANG_THAI.includes(value as any)) { // 'as any' để bỏ qua kiểm tra kiểu tạm thời
-        setFormData(prev => ({ ...prev, [id]: value as z.infer<typeof schema>['trangThai'] }));
-      } else {
-        console.warn(`Invalid status value: ${value}`);
-        // Xử lý lỗi hoặc không cập nhật nếu giá trị không hợp lệ
-      }
-    } else {
-      setFormData(prev => ({ ...prev, [id]: value }));
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    try {
-      // Trước khi gọi onSave, bạn có thể muốn xác thực formData một lần nữa bằng Zod schema
-      const validatedFormData = schema.parse(formData); // Sẽ ném lỗi nếu không hợp lệ
-      await onSave(validatedFormData);
-      toast.success(`'${formData.hoTen}' saved successfully.`);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        toast.error(`Validation failed: ${error.errors.map(err => err.message).join(', ')}`);
-        console.error('Validation Error:', error.errors);
-      } else {
-        toast.error(`Failed to save '${formData.hoTen}'.`);
-        console.error('Error saving document:', error);
-      }
-    } finally {
-      setIsSaving(false);
-    }
-  };
+function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
+  const isMobile = useIsMobile()
 
   return (
-    <Drawer direction={isMobile ? "bottom" : "right"}>
-      <DrawerTrigger asChild>
-        {/* Trong DropdownMenuItem của DataTable, DrawerTrigger sẽ là một nút hoặc div bọc xung quanh */}
-        <Button variant="link" className="text-foreground w-fit px-0 text-left">
-          Edit
-          {/* <IconEdit className="mr-2 h-4 w-4" /> Edit // Nếu bạn muốn icon */}
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button variant="link" className="w-fit px-0 text-left text-foreground">
+          {item.student_name}
         </Button>
-      </DrawerTrigger>
-      <DrawerContent>
-        <DrawerHeader className="gap-1">
-          <DrawerTitle>{item.hoTen}</DrawerTitle>
-          <DrawerDescription>
-            Chi tiết và chỉnh sửa thông tin học viên
-          </DrawerDescription>
-        </DrawerHeader>
-        <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
+      </SheetTrigger>
+
+      <SheetContent side="right" className="flex flex-col w-[1200px]">
+        <SheetHeader className="gap-1">
+          <SheetTitle>{item.student_name}</SheetTitle>
+          <SheetDescription>
+            Thông tin chi tiết về sinh viên này.
+          </SheetDescription>
+        </SheetHeader>
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto py-4 text-sm">
           {!isMobile && (
             <>
+              <ChartContainer config={chartConfig}>
+                <AreaChart
+                  accessibilityLayer
+                  data={chartData}
+                  margin={{
+                    left: 0,
+                    right: 10,
+                  }}
+                >
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey="month"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    tickFormatter={(value) => value.slice(0, 3)}
+                    hide
+                  />
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent indicator="dot" />}
+                  />
+                  <Area
+                    dataKey="visitors"
+                    type="natural"
+                    fill="var(--color-visitors)"
+                    fillOpacity={0.4}
+                    stroke="var(--color-visitors)"
+                    stackId="a"
+                  />
+                </AreaChart>
+              </ChartContainer>
               <Separator />
-              <div className="grid gap-2">
-                <div className="flex gap-2 leading-none font-medium">
-                  Thông tin chi tiết về học viên {item.hoTen}.
+              <div className="grid gap-2 px-4">
+                <div className="flex gap-2 font-medium leading-none">
+                  Trạng thái hiện tại: {item.current_status}
+                  {item.current_status === "Engaging" ? (
+                    <CheckCircle2Icon className="size-4 text-green-500 dark:text-green-400" />
+                  ) : (
+                    <LoaderIcon />
+                  )}
+                </div>
+                <div className="text-muted-foreground">
+                  Đây là một đoạn văn bản mô tả chung về sinh viên và trạng thái của họ.
                 </div>
               </div>
               <Separator />
             </>
           )}
-          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+          <form className="flex flex-col gap-4 px-4">
             <div className="flex flex-col gap-3">
-              <Label htmlFor="hoTen">Họ tên</Label>
-              <Input
-                id="hoTen"
-                value={formData.hoTen}
-                onChange={handleChange}
-              />
+              <Label htmlFor="student_name">Tên Sinh Viên</Label>
+              <Input id="student_name" defaultValue={item.student_name} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-3">
+                <Label htmlFor="current_education_level">Trình Độ Học Vấn</Label>
+                <Select defaultValue={item.current_education_level}>
+                  <SelectTrigger id="current_education_level" className="w-full">
+                    <SelectValue placeholder="Chọn trình độ" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="THPT">THPT</SelectItem>
+                    <SelectItem value="Cao Đẳng">Cao Đẳng</SelectItem>
+                    <SelectItem value="Đại Học">Đại Học</SelectItem>
+                    <SelectItem value="Sau Đại Học">Sau Đại Học</SelectItem>
+                    <SelectItem value="Khác">Khác</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-3">
+                <Label htmlFor="current_status">Trạng Thái</Label>
+                <Select defaultValue={item.current_status}>
+                  <SelectTrigger id="current_status" className="w-full">
+                    <SelectValue placeholder="Chọn trạng thái" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Lead">Lead</SelectItem>
+                    <SelectItem value="Engaging">Engaging</SelectItem>
+                    <SelectItem value="Enrolled">Enrolled</SelectItem>
+                    <SelectItem value="Dropped Out">Dropped Out</SelectItem>
+                    <SelectItem value="Completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-3">
+                <Label htmlFor="phone_number">Số Điện Thoại</Label>
+                <Input id="phone_number" defaultValue={item.phone_number} />
+              </div>
+              <div className="flex flex-col gap-3">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" defaultValue={item.email ?? ""} />
+              </div>
             </div>
             <div className="flex flex-col gap-3">
-              <Label htmlFor="lienHe">Liên hệ</Label>
-              <Input
-                id="lienHe"
-                value={formData.lienHe}
-                onChange={handleChange}
-                placeholder="Email hoặc Số điện thoại"
-              />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="khoaHoc">Khóa học</Label>
-              <Input
-                id="khoaHoc"
-                value={formData.khoaHoc}
-                onChange={handleChange}
-                placeholder="Khóa học đang tư vấn/đăng ký"
-              />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="kenh">Kênh</Label>
-              <Select
-                value={formData.kenh}
-                onValueChange={handleSelectChange('kenh')}
-              >
-                <SelectTrigger id="kenh" className="w-full">
-                  <SelectValue placeholder="Chọn kênh" />
+              <Label htmlFor="assigned_counselor_name">Người Tư Vấn Được Gán</Label>
+              <Select defaultValue={item.assigned_counselor_name}>
+                <SelectTrigger id="assigned_counselor_name" className="w-full">
+                  <SelectValue placeholder="Chọn người tư vấn" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Facebook Ads">Facebook Ads</SelectItem>
-                  <SelectItem value="Zalo">Zalo</SelectItem>
-                  <SelectItem value="Website">Website</SelectItem>
-                  <SelectItem value="Giới thiệu">Giới thiệu</SelectItem>
-                  {/* Thêm các kênh khác nếu cần */}
+                  <SelectItem value="Trần Thị B">Trần Thị B</SelectItem>
+                  <SelectItem value="Lê Văn C">Lê Văn C</SelectItem>
+                  <SelectItem value="Phạm Thu D">Phạm Thu D</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
             <div className="flex flex-col gap-3">
-              <Label htmlFor="trangThai">Trạng thái</Label>
-              <Select
-                value={formData.trangThai}
-                onValueChange={handleSelectChange('trangThai')}
-              >
-                <SelectTrigger id="trangThai" className="w-full">
-                  <SelectValue placeholder="Chọn trạng thái" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ALL_TRANG_THAI.map(status => ( // Duyệt qua ALL_TRANG_THAI để tạo SelectItem
-                    <SelectItem key={status} value={status}>
-                      {status}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="last_consultation_notes">Ghi Chú Tư Vấn Cuối Cùng</Label>
+              <Input
+                id="last_consultation_notes"
+                defaultValue={item.last_consultation_notes || ""}
+              />
             </div>
-            <DrawerFooter>
-              <Button type="submit" disabled={isSaving}>
-                {isSaving ? 'Đang lưu...' : 'Lưu'}
-              </Button>
-              <DrawerClose asChild>
-                <Button variant="outline">Đóng</Button>
-              </DrawerClose>
-            </DrawerFooter>
           </form>
         </div>
-      </DrawerContent>
-    </Drawer>
-  );
+        <SheetFooter className="mt-auto flex gap-2 sm:flex-col sm:space-x-0">
+          <Button className="w-full">Lưu Thay Đổi</Button>
+          <SheetClose asChild>
+            <Button variant="outline" className="w-full">
+              Hoàn Tất
+            </Button>
+          </SheetClose>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  )
 }

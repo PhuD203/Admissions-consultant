@@ -1,3 +1,4 @@
+// src/app/(admin)/dashboard/page.tsx
 "use client"
 
 import * as React from "react"
@@ -11,13 +12,16 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar"
 
+// Import schema từ file data-table.tsx
 import { schema } from "@/components/data-table" // Đảm bảo đường dẫn đúng
 
-import rawData from "./data.json"
+// Import dữ liệu từ data.json
+import rawData from "./data.json" // <-- Quan trọng: File data.json này phải có cấu trúc mới
 
 export default function Page() {
   const typedData = React.useMemo(() => {
     try {
+      // Dòng này sẽ hoạt động ổn khi rawData có cấu trúc đúng
       return schema.array().parse(rawData);
     } catch (error) {
       console.error("Error parsing data.json with Zod schema:", error);
@@ -44,6 +48,7 @@ export default function Page() {
               <div className="px-4 lg:px-6">
                 <ChartAreaInteractive />
               </div>
+              {/* Truyền dữ liệu đã được xác thực vào DataTable */}
               <DataTable data={typedData} />
             </div>
           </div>
