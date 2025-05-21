@@ -35,36 +35,27 @@ import {
 
 const data = {
   user: {
-    name: "shadcn",
+    name: "admin",
     email: "m@example.com",
     avatar: "/avatars/shadcn.jpg",
   },
   navMain: [
     {
-      title: "Dashboard",
-      url: "#",
+      title: "Quản lý thông tin tư vấn",
+      url: "/dashboard",
       icon: IconDashboard,
     },
     {
-      title: "Lifecycle",
+      title: "Quản lý lịch sử tư vấn",
       url: "#",
       icon: IconListDetails,
     },
     {
-      title: "Analytics",
-      url: "#",
+      title: "Thống kê & báo cáo",
+      url: "/report",
       icon: IconChartBar,
     },
-    {
-      title: "Projects",
-      url: "#",
-      icon: IconFolder,
-    },
-    {
-      title: "Team",
-      url: "#",
-      icon: IconUsers,
-    },
+
   ],
   navClouds: [
     {

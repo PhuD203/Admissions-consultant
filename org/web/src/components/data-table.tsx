@@ -111,6 +111,8 @@ import {
   IconSend, // Ví dụ icon cho "Mới"
   IconUserPlus // Ví dụ icon cho "Đăng ký học"
 } from "@tabler/icons-react"
+import Search from "./search"
+import { useCallback } from "react"
 
 // Trong file định nghĩa schema của bạn (ví dụ: data-table.tsx hoặc riêng biệt)
 export const schema = z.object({
@@ -327,11 +329,11 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
         </Badge>
       );
     },
-    enableColumnFilter: true, // Quan trọng: bật bộ lọc cho cột này
+    enableColumnFilter: true,
   },
   // Cột "Hành động"
   {
-    id: "actions", // ID duy nhất cho cột hành động
+    id: "actions",
     cell: ({ row }) => (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -435,6 +437,42 @@ export function DataTable({
     getFacetedUniqueValues: getFacetedUniqueValues(),
   })
 
+  const handleSearch = useCallback((searchTerm: string) => {
+    // Đặt bộ lọc cho cột 'hoTen'
+    // Lưu ý: React-table sẽ tự động xử lý việc này và không gây re-render nếu giá trị không thay đổi
+    // Tuy nhiên, nếu bạn muốn clear filter khi searchTerm rỗng, bạn có thể kiểm tra:
+    if (searchTerm) {
+      table.getColumn('hoTen')?.setFilterValue(searchTerm);
+    } else {
+      table.getColumn('hoTen')?.setFilterValue(undefined); // Xóa bộ lọc khi input rỗng
+    }
+  }, [table]);
+
+  // const tables = useReactTable({
+  //   data,
+  //   columns,
+  //   state: {
+  //     sorting,
+  //     columnVisibility,
+  //     rowSelection,
+  //     columnFilters, // Quan trọng: Đảm bảo columnFilters được truyền vào state
+  //     pagination,
+  //   },
+  //   getCoreRowModel: getCoreRowModel(),
+  //   enableRowSelection: true,
+  //   onRowSelectionChange: setRowSelection,
+  //   onSortingChange: setSorting,
+  //   onColumnFiltersChange: setColumnFilters, // Quan trọng: Cập nhật hàm này
+  //   onColumnVisibilityChange: setColumnVisibility,
+  //   onPaginationChange: setPagination,
+  //   getFilteredRowModel: getFilteredRowModel(), // Cần để lọc dữ liệu
+  //   getPaginationRowModel: getPaginationRowModel(),
+  //   getSortedRowModel: getSortedRowModel(),
+  //   getFacetedRowModel: getFacetedRowModel(),
+  //   getFacetedUniqueValues: getFacetedUniqueValues(),
+  // })
+
+
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
     if (active && over && active.id !== over.id) {
@@ -464,28 +502,29 @@ export function DataTable({
             <SelectValue placeholder="Select a view" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="outline">Outline</SelectItem>
-            <SelectItem value="past-performance">Past Performance</SelectItem>
+            <SelectItem value="outline">Danh sách tư vấn tuyển sinh</SelectItem>
+            {/* <SelectItem value="past-performance">Past Performance</SelectItem>
             <SelectItem value="key-personnel">Key Personnel</SelectItem>
-            <SelectItem value="focus-documents">Focus Documents</SelectItem>
+            <SelectItem value="focus-documents">Focus Documents</SelectItem> */}
           </SelectContent>
         </Select>
         <TabsList className="**:data-[slot=badge]:bg-muted-foreground/30 hidden **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1 @4xl/main:flex">
-          <TabsTrigger value="outline">Outline</TabsTrigger>
-          <TabsTrigger value="past-performance">
+          <TabsTrigger value="outline">Danh sách tư vấn tuyển sinh</TabsTrigger>
+          {/* <TabsTrigger value="past-performance">
             Past Performance <Badge variant="secondary">3</Badge>
           </TabsTrigger>
           <TabsTrigger value="key-personnel">
             Key Personnel <Badge variant="secondary">2</Badge>
           </TabsTrigger>
-          <TabsTrigger value="focus-documents">Focus Documents</TabsTrigger>
+          <TabsTrigger value="focus-documents">Focus Documents</TabsTrigger> */}
         </TabsList>
         <div className="flex items-center gap-2">
+          <Search onSearch={handleSearch} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
                 <IconLayoutColumns />
-                <span className="hidden lg:inline">Customize Columns</span>
+                <span className="hidden lg:inline">Ẩn/hiện cột</span>
                 <span className="lg:hidden">Columns</span>
                 <IconChevronDown />
               </Button>
@@ -516,7 +555,7 @@ export function DataTable({
           </DropdownMenu>
           <Button variant="outline" size="sm">
             <IconPlus />
-            <span className="hidden lg:inline">Add Section</span>
+            <span className="hidden lg:inline">Thêm học viên</span>
           </Button>
         </div>
       </div>
@@ -653,7 +692,7 @@ export function DataTable({
           </div>
         </div>
       </TabsContent>
-      <TabsContent
+      {/* <TabsContent
         value="past-performance"
         className="flex flex-col px-4 lg:px-6"
       >
@@ -667,7 +706,7 @@ export function DataTable({
         className="flex flex-col px-4 lg:px-6"
       >
         <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
-      </TabsContent>
+      </TabsContent> */}
     </Tabs>
   )
 }
@@ -692,11 +731,12 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-function TableCellViewer({ item, onSave }: { // Thêm onSave prop
+function TableCellViewer({ item, onSave }: {
   item: z.infer<typeof schema>;
   onSave: (updatedItem: z.infer<typeof schema>) => Promise<void>;
 }) {
   const isMobile = useIsMobile();
+  // Khởi tạo formData với item ban đầu, đảm bảo nó có kiểu đúng
   const [formData, setFormData] = React.useState<z.infer<typeof schema>>(item);
   const [isSaving, setIsSaving] = React.useState(false);
 
@@ -705,19 +745,38 @@ function TableCellViewer({ item, onSave }: { // Thêm onSave prop
     setFormData(prev => ({ ...prev, [id]: value }));
   };
 
+  // Cập nhật handleSelectChange để ép kiểu 'trangThai'
   const handleSelectChange = (id: keyof z.infer<typeof schema>) => (value: string) => {
-    setFormData(prev => ({ ...prev, [id]: value }));
+    // Nếu id là 'trangThai', ép kiểu value sang z.infer<typeof schema>['trangThai']
+    if (id === 'trangThai') {
+      // Kiểm tra xem value có phải là một giá trị hợp lệ trong enum không
+      if (ALL_TRANG_THAI.includes(value as any)) { // 'as any' để bỏ qua kiểm tra kiểu tạm thời
+        setFormData(prev => ({ ...prev, [id]: value as z.infer<typeof schema>['trangThai'] }));
+      } else {
+        console.warn(`Invalid status value: ${value}`);
+        // Xử lý lỗi hoặc không cập nhật nếu giá trị không hợp lệ
+      }
+    } else {
+      setFormData(prev => ({ ...prev, [id]: value }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     try {
-      await onSave(formData);
-      toast.success(`'${formData.hoTen}' saved successfully.`); // Cập nhật toast message
+      // Trước khi gọi onSave, bạn có thể muốn xác thực formData một lần nữa bằng Zod schema
+      const validatedFormData = schema.parse(formData); // Sẽ ném lỗi nếu không hợp lệ
+      await onSave(validatedFormData);
+      toast.success(`'${formData.hoTen}' saved successfully.`);
     } catch (error) {
-      toast.error(`Failed to save '${formData.hoTen}'.`); // Cập nhật toast message
-      console.error('Error saving document:', error);
+      if (error instanceof z.ZodError) {
+        toast.error(`Validation failed: ${error.errors.map(err => err.message).join(', ')}`);
+        console.error('Validation Error:', error.errors);
+      } else {
+        toast.error(`Failed to save '${formData.hoTen}'.`);
+        console.error('Error saving document:', error);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -726,13 +785,15 @@ function TableCellViewer({ item, onSave }: { // Thêm onSave prop
   return (
     <Drawer direction={isMobile ? "bottom" : "right"}>
       <DrawerTrigger asChild>
+        {/* Trong DropdownMenuItem của DataTable, DrawerTrigger sẽ là một nút hoặc div bọc xung quanh */}
         <Button variant="link" className="text-foreground w-fit px-0 text-left">
-          {item.hoTen} {/* Hiển thị Họ tên */}
+          Edit
+          {/* <IconEdit className="mr-2 h-4 w-4" /> Edit // Nếu bạn muốn icon */}
         </Button>
       </DrawerTrigger>
       <DrawerContent>
         <DrawerHeader className="gap-1">
-          <DrawerTitle>{item.hoTen}</DrawerTitle> {/* Hiển thị Họ tên */}
+          <DrawerTitle>{item.hoTen}</DrawerTitle>
           <DrawerDescription>
             Chi tiết và chỉnh sửa thông tin học viên
           </DrawerDescription>
@@ -740,8 +801,6 @@ function TableCellViewer({ item, onSave }: { // Thêm onSave prop
         <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
           {!isMobile && (
             <>
-              {/* Có thể xóa phần biểu đồ và mô tả nếu không cần */}
-              {/* ... ChartContainer và content liên quan ... */}
               <Separator />
               <div className="grid gap-2">
                 <div className="flex gap-2 leading-none font-medium">
@@ -752,7 +811,6 @@ function TableCellViewer({ item, onSave }: { // Thêm onSave prop
             </>
           )}
           <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-            {/* Các trường input mới */}
             <div className="flex flex-col gap-3">
               <Label htmlFor="hoTen">Họ tên</Label>
               <Input
@@ -807,11 +865,11 @@ function TableCellViewer({ item, onSave }: { // Thêm onSave prop
                   <SelectValue placeholder="Chọn trạng thái" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Đang tư vấn">Đang tư vấn</SelectItem>
-                  <SelectItem value="Đã đăng ký">Đã đăng ký</SelectItem>
-                  <SelectItem value="Tiềm năng">Tiềm năng</SelectItem>
-                  <SelectItem value="Hủy">Hủy</SelectItem>
-                  {/* Thêm các trạng thái khác nếu cần */}
+                  {ALL_TRANG_THAI.map(status => ( // Duyệt qua ALL_TRANG_THAI để tạo SelectItem
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
