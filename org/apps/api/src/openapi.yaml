@@ -1,0 +1,184 @@
+openapi: 3.0.3
+info:
+  title: CUSC API - Form & Email
+  version: 1.0.0
+
+paths:
+  /submitform:
+    post:
+      summary: Gửi dữ liệu đăng ký học sinh
+      tags:
+        - Form
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                student_name:
+                  type: string
+                  description: Tên học sinh
+                date_of_birth:
+                  type: string
+                  format: date
+                  description: Ngày sinh
+                gender:
+                  type: string
+                  description: Giới tính
+                email:
+                  type: string
+                  format: email
+                  description: Email học sinh
+                phone_number:
+                  type: string
+                  description: Số điện thoại
+                zalo_phone:
+                  type: string
+                  description: Số điện thoại Zalo
+                link_facebook:
+                  type: string
+                  format: uri
+                  description: Link Facebook
+                current_education_level:
+                  type: string
+                  description: Trình độ học vấn hiện tại
+                other_education_level_description:
+                  type: string
+                  description: Mô tả thêm về trình độ học vấn khác
+                high_school_name:
+                  type: string
+                  description: Tên trường THPT
+                city:
+                  type: string
+                  description: Thành phố cư trú
+                source:
+                  type: string
+                  description: Nguồn thông tin
+                current_status:
+                  type: string
+                  description: Trạng thái hiện tại
+                registration_date:
+                  type: string
+                  description: Ngày đăng ký
+                status_change_date:
+                  type: string
+                  description: Ngày thay đổi trạng thái
+                student_created_at:
+                  type: string
+                  description: Ngày tạo hồ sơ học sinh
+                student_updated_at:
+                  type: string
+                  description: Ngày cập nhật hồ sơ học sinh
+                assigned_counselor_name:
+                  type: string
+                  description: Tên cố vấn được phân công
+                assigned_counselor_email:
+                  type: string
+                  description: Email cố vấn được phân công
+                assigned_counselor_type:
+                  type: string
+                  description: Loại cố vấn
+                interested_courses_details:
+                  type: string
+                  description: Chi tiết khóa học quan tâm
+                student_status_history:
+                  type: string
+                  description: Lịch sử trạng thái học sinh
+                last_consultation_date:
+                  type: string
+                  description: Ngày tư vấn gần nhất
+                last_consultation_duration_minutes:
+                  type: string
+                  description: Thời lượng tư vấn (phút)
+                last_consultation_notes:
+                  type: string
+                  description: Ghi chú tư vấn gần nhất
+                last_consultation_type:
+                  type: string
+                  description: Loại tư vấn gần nhất
+                last_consultation_status:
+                  type: string
+                  description: Trạng thái tư vấn gần nhất
+                last_consultation_counselor_name:
+                  type: string
+                  description: Tên cố vấn tư vấn gần nhất
+              required:
+                - student_name
+                - email
+      responses:
+        200:
+          description: Đăng ký thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Đăng ký thành công'
+                  dataReceived:
+                    type: object
+                    description: Dữ liệu nhận được từ client
+        400:
+          description: Thiếu thông tin bắt buộc
+
+  /sendemail:
+    post:
+      summary: Gửi email
+      tags:
+        - Email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                to:
+                  type: string
+                  format: email
+                  description: Địa chỉ email người nhận
+                subject:
+                  type: string
+                  description: Tiêu đề email
+                text:
+                  type: string
+                  description: Nội dung email dạng thuần văn bản
+                html:
+                  type: string
+                  description: Nội dung email dạng HTML (nếu có)
+              required:
+                - to
+                - subject
+                - text
+      responses:
+        '200':
+          description: Email đã gửi thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Email đã được gửi'
+        '400':
+          description: Yêu cầu không hợp lệ
+
+  /hello:
+    get:
+      summary: Test API trả về Hello World
+      tags:
+        - Test
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Hello World
