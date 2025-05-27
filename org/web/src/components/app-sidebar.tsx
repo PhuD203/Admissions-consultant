@@ -47,7 +47,7 @@ const data = {
     },
     {
       title: "Quản lý lịch sử tư vấn",
-      url: "#",
+      url: "/history",
       icon: IconListDetails,
     },
     {
