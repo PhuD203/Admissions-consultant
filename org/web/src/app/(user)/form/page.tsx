@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useLayoutEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { AlertButton } from '@/components/alertButton';
 
 interface FormData {
   fullName: string;
@@ -56,6 +57,12 @@ const RegistrationForm: React.FC = () => {
   }, []);
 
   const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [show, setShow] = useState({
+    visible: false,
+    message: '',
+    errors: false,
+  });
+
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>(
     {}
   );
@@ -105,9 +112,9 @@ const RegistrationForm: React.FC = () => {
       newErrors.otherUserType = 'Vui lòng ghi rõ mục khác';
     }
 
-    // if (formData.infoSources.length === 0) {
-    //   newErrors.infoSources = 'Vui lòng chọn ít nhất một nguồn thông tin';
-    // }
+    if (formData.infoSources.length === 0) {
+      newErrors.infoSources = 'Vui lòng chọn ít nhất một nguồn thông tin';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -157,11 +164,23 @@ const RegistrationForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setShow({
+      visible: false,
+      message: '',
+      errors: true,
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 
     if (!validateForm()) {
-      alert('Dữ liệu không hợp lệ, vui lòng kiểm tra kỹ lại');
+      setShow({
+        visible: true,
+        message: '❌ Dữ liệu không hợp lệ, vui lòng kiểm tra kỹ lại',
+        errors: false,
+      });
       return; // Dừng gửi form nếu validation thất bại
     }
+    //---------------------------------------------------------------
+    //Code Lấy Khóa học đăng ký tư vấn
     let courseName = '';
     let className = '';
     if (typeof window !== 'undefined') {
@@ -174,7 +193,8 @@ const RegistrationForm: React.FC = () => {
       }
     }
 
-    // API gửi mail tự động
+    //-------------------------------------------------------
+    // Code API gửi mail tự động
     fetch('http://localhost:3000/api/sendemail', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -183,47 +203,46 @@ const RegistrationForm: React.FC = () => {
         subject: 'Cảm ơn bạn đã liên hệ với CUSC',
         text: `Chào ${formData.fullName},
 
-CUSC xin chân thành cảm ơn bạn đã quan tâm và liên hệ với các khóa học của trung tâm.
+    CUSC xin chân thành cảm ơn bạn đã quan tâm và liên hệ với các khóa học của trung tâm.
 
-Chúng tôi đã nhận được yêu cầu của bạn và sẽ liên hệ lại trong thời gian sớm nhất trong khung giờ làm việc của trung tâm. Mong bạn vui lòng chú ý điện thoại và email để nhận được thông tin hỗ trợ nhanh chóng.
+    Chúng tôi đã nhận được yêu cầu của bạn và sẽ liên hệ lại trong thời gian sớm nhất trong khung giờ làm việc của trung tâm. Mong bạn vui lòng chú ý điện thoại và email để nhận được thông tin hỗ trợ nhanh chóng.
 
-Ngoài ra, bạn có thể liên hệ với chúng tôi qua Zalo để được tư vấn nhanh hơn.
+    Ngoài ra, bạn có thể liên hệ với chúng tôi qua Zalo để được tư vấn nhanh hơn.
 
-CUSC trân trọng cảm ơn.`,
+    CUSC trân trọng cảm ơn.`,
         html: `
-      <!DOCTYPE html>
-      <html lang="vi">
-      <head>
-        <meta charset="UTF-8" />
-        <title>Thư cảm ơn từ CUSC</title>
-      </head>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-        <p>Chào <strong>${formData.fullName}</strong>,</p>
+          <!DOCTYPE html>
+          <html lang="vi">
+          <head>
+            <meta charset="UTF-8" />
+            <title>Thư cảm ơn từ CUSC</title>
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <p>Chào <strong>${formData.fullName}</strong>,</p>
 
-        <p>
-          CUSC xin chân thành cảm ơn bạn đã quan tâm và liên hệ với các khóa học của trung tâm.
-        </p>
+            <p>
+              CUSC xin chân thành cảm ơn bạn đã quan tâm và liên hệ với các khóa học của trung tâm.
+            </p>
 
-        <p>
-          Chúng tôi đã nhận được yêu cầu của bạn và sẽ liên hệ lại trong thời gian sớm nhất trong khung giờ làm việc của trung tâm. Mong bạn vui lòng chú ý điện thoại và email để nhận được thông tin hỗ trợ nhanh chóng.
-        </p>
+            <p>
+              Chúng tôi đã nhận được yêu cầu của bạn và sẽ liên hệ lại trong thời gian sớm nhất trong khung giờ làm việc của trung tâm. Mong bạn vui lòng chú ý điện thoại và email để nhận được thông tin hỗ trợ nhanh chóng.
+            </p>
 
-        <p>
-          Ngoài ra, bạn có thể liên hệ với chúng tôi qua Zalo để được tư vấn nhanh hơn.
-        </p>
- <img 
-          src="https://yu.ctu.edu.vn/images/upload/article/2020/03/0305-logo-ctu.png"
-          alt="Logo CUSC" 
-          style="margin-top: 20px; width: 200px; display: block;" 
-        />
-        <p>
-          CUSC trân trọng cảm ơn.
-        </p>
+            <p>
+              Ngoài ra, bạn có thể liên hệ với chúng tôi qua Zalo để được tư vấn nhanh hơn.
+            </p>
+     <img
+              src="https://yu.ctu.edu.vn/images/upload/article/2020/03/0305-logo-ctu.png"
+              alt="Logo CUSC"
+              style="margin-top: 20px; width: 200px; display: block;"
+            />
+            <p>
+              CUSC trân trọng cảm ơn.
+            </p>
 
-       
-      </body>
-      </html>
-    `,
+          </body>
+          </html>
+        `,
       }),
     })
       .then((res) => res.json())
@@ -236,6 +255,44 @@ CUSC trân trọng cảm ơn.`,
       })
       .catch((err) => console.error('Fetch error:', err));
 
+    //-------------------------------------------------
+    // API gửi trả API giới tính từ tên (tự xây dựng bẳng máy học)
+    // let gender;
+    // try {
+    //   const response = await fetch('http://localhost:3000/api/predict-gender', {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //     },
+    //     body: JSON.stringify({
+    //       name: formData.fullName,
+    //     }),
+    //   });
+
+    //   if (!response.ok) {
+    //     throw new Error('Lỗi khi gửi dữ liệu');
+    //   }
+    //   const result = await response.json();
+    //   gender = result.gender;
+    // } catch (error) {
+    //   console.error(error);
+    // }
+
+    //API gửi trả API giới tính từ tên (có sẵn)
+    const response = await fetch(
+      `https://api.genderize.io?name=${encodeURIComponent(formData.fullName)}`
+    );
+    const data = await response.json();
+    let gender = data.gender;
+    if (gender === 'male' && data.probability > 0.7) {
+      gender = 'Nam';
+    } else if (gender == 'female' && data.probability > 0.7) {
+      gender = 'Nữ';
+    } else {
+      gender = 'Chưa rõ';
+    }
+
+    //----------------------------------------
     // API gửi data đên BE
     const now = new Date();
     try {
@@ -247,7 +304,7 @@ CUSC trân trọng cảm ơn.`,
         body: JSON.stringify({
           student_name: formData.fullName,
           date_of_birth: formData.dob,
-          gender: formData.gender,
+          gender: formData.gender === '' ? gender : formData.gender,
           email: formData.email,
           phone_number: formData.phoneNumber,
           zalo_phone: formData.zaloPhoneNumber,
@@ -259,34 +316,36 @@ CUSC trân trọng cảm ơn.`,
           source: formData.infoSources
             .filter((src) => src !== 'Khác')
             .join(', '),
-          current_status: 'No contact yet',
+          // current_status: 'No contact yet',
           registration_date: now.toLocaleString(),
-          status_change_date: 'null',
-          student_created_at: 'null',
-          student_updated_at: 'null',
-          assigned_counselor_name: 'null',
-          assigned_counselor_email: 'null',
-          assigned_counselor_type: 'null',
+          // status_change_date: 'null',
+          // student_created_at: 'null',
+          // student_updated_at: 'null',
+          // assigned_counselor_name: 'null',
+          // assigned_counselor_email: 'null',
+          // assigned_counselor_type: 'null',
           interested_courses_details: courseName + '___' + className,
-          student_status_history: 'null',
-          last_consultation_date: 'null',
-          last_consultation_duration_minutes: 'null',
-          last_consultation_notes: 'null',
-          last_consultation_type: 'null',
-          last_consultation_status: 'Contact',
-          last_consultation_counselor_name: 'null',
+          // student_status_history: 'null',
+          // last_consultation_date: 'null',
+          // last_consultation_duration_minutes: 'null',
+          // last_consultation_notes: 'null',
+          // last_consultation_type: 'null',
+          // last_consultation_status: 'Contact',
+          // last_consultation_counselor_name: 'null',
         }),
       });
 
       if (!response.ok) {
         throw new Error('Lỗi khi gửi dữ liệu');
       }
-
       const result = await response.json();
-      console.log('Phản hồi từ server:', result);
+      setShow({
+        visible: true,
+        message: '✅ Đã đăng ký thành công',
+        errors: true,
+      });
 
-      // Nếu muốn, bạn có thể chuyển trang hoặc reset form ở đây
-      // router.push('/thank-you'); hoặc setFormData(initialFormData);
+      console.log('Phản hồi từ server:', result);
     } catch (error) {
       console.error(error);
     }
@@ -297,10 +356,15 @@ CUSC trân trọng cảm ơn.`,
       onSubmit={handleSubmit}
       className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md space-y-6 "
     >
-      <h2 className="text-3xl font-bold mb-4">
-        📝 Đăng ký tư vấn chương trình đào tạo tại CUSC
-      </h2>
+      <AlertButton
+        visible={show.visible}
+        message={show.message}
+        isError={show.errors}
+      />
 
+      <h2 className="text-3xl font-bold mb-4">
+        📝 Đăng ký tư vấn chương trình đào tạo
+      </h2>
       {/* I. Thông tin cá nhân */}
       <fieldset className="border p-4 rounded">
         <legend className="font-semibold mb-2">I. Thông tin cá nhân</legend>
@@ -497,7 +561,6 @@ CUSC trân trọng cảm ơn.`,
           )}
         </div>
       </fieldset>
-
       {/* II. Thông tin học tập */}
       <fieldset className="border p-4 rounded">
         <legend className="font-semibold mb-2">II. Thông tin học tập</legend>
@@ -535,7 +598,8 @@ CUSC trân trọng cảm ơn.`,
       {/* IV. Bạn biết thông tin qua kênh nào */}
       <fieldset className="border p-4 rounded">
         <legend className="font-semibold mb-2">
-          III. Bạn biết thông tin qua kênh nào?
+          III. Bạn biết thông tin qua kênh nào?{' '}
+          <span className="text-red-600">(Bắt buộc)</span>
         </legend>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border p-2 rounded">
           {infoSourcesOptions.map((source) => (
@@ -565,11 +629,10 @@ CUSC trân trọng cảm ơn.`,
             <span>Khác</span>
           </label>
         </div>
-        {/* {errors.infoSources && (
+        {errors.infoSources && (
           <p className="text-red-600 text-sm mt-1">{errors.infoSources}</p>
-        )} */}
+        )}
       </fieldset>
-
       {/* V. Đồng ý nhận thông báo */}
       {/* <fieldset className="border p-4 rounded">
         <legend className="font-semibold mb-2">
@@ -589,7 +652,6 @@ CUSC trân trọng cảm ơn.`,
           </span>
         </label>
       </fieldset> */}
-
       {/* Submit */}
       <div>
         <button

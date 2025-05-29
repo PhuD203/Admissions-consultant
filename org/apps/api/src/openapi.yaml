@@ -55,57 +55,12 @@ paths:
                 source:
                   type: string
                   description: Nguồn thông tin
-                current_status:
-                  type: string
-                  description: Trạng thái hiện tại
                 registration_date:
                   type: string
                   description: Ngày đăng ký
-                status_change_date:
-                  type: string
-                  description: Ngày thay đổi trạng thái
-                student_created_at:
-                  type: string
-                  description: Ngày tạo hồ sơ học sinh
-                student_updated_at:
-                  type: string
-                  description: Ngày cập nhật hồ sơ học sinh
-                assigned_counselor_name:
-                  type: string
-                  description: Tên cố vấn được phân công
-                assigned_counselor_email:
-                  type: string
-                  description: Email cố vấn được phân công
-                assigned_counselor_type:
-                  type: string
-                  description: Loại cố vấn
                 interested_courses_details:
-                  type: string
+                  type: object
                   description: Chi tiết khóa học quan tâm
-                student_status_history:
-                  type: string
-                  description: Lịch sử trạng thái học sinh
-                last_consultation_date:
-                  type: string
-                  description: Ngày tư vấn gần nhất
-                last_consultation_duration_minutes:
-                  type: string
-                  description: Thời lượng tư vấn (phút)
-                last_consultation_notes:
-                  type: string
-                  description: Ghi chú tư vấn gần nhất
-                last_consultation_type:
-                  type: string
-                  description: Loại tư vấn gần nhất
-                last_consultation_status:
-                  type: string
-                  description: Trạng thái tư vấn gần nhất
-                last_consultation_counselor_name:
-                  type: string
-                  description: Tên cố vấn tư vấn gần nhất
-              required:
-                - student_name
-                - email
       responses:
         200:
           description: Đăng ký thành công
