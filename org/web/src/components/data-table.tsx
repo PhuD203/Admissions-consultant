@@ -49,7 +49,6 @@ import {
   LoaderIcon,
   MoreVerticalIcon,
   PlusIcon,
-  TrendingUpIcon,
   CalendarIcon
 } from "lucide-react"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
@@ -119,7 +118,6 @@ import {
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 
-// Cập nhật schema để khớp với cấu trúc JSON của bạn
 export const schema = z.object({
   student_id: z.number(),
   student_name: z.string(),
@@ -127,7 +125,7 @@ export const schema = z.object({
   phone_number: z.string(),
   zalo_phone: z.string().nullable(),
   link_facebook: z.string().url().nullable(),
-  date_of_birth: z.string().nullable(), // Nullable vì có thể không có giá trị
+  date_of_birth: z.string().nullable(),
   current_education_level: z.string(),
   other_education_level_description: z.string().nullable(),
   high_school_name: z.string().nullable(),
