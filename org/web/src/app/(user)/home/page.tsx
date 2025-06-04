@@ -3,8 +3,9 @@
 // Trong component
 import { useRouter } from 'next/navigation';
 
-import React, { useState } from 'react'; // Bắt buộc phải import useState
-import data from './data.json';
+import React, { useState, useEffect } from 'react'; // Bắt buộc phải import useState
+// import data from './data.json';
+import { fetchCourseCategories, data } from './data';
 
 export default function AboutPage() {
   const router = useRouter();
@@ -18,9 +19,26 @@ export default function AboutPage() {
     setOpenId(openId === id ? null : id);
   };
 
+  const [data, setData] = useState<data[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const result = await fetchCourseCategories();
+        setData(result);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
   return (
     <div className="bg-gray-50">
-      <div className="max-w-4xl mx-auto border-gray-300">
+      <div className="max-w-4xl mx-auto border-gray-400">
         <div className="container mx-auto p-2 space-y-1">
           <button
             className="sm:hidden fixed top-4 border left-4 z-50 bg-gray-100 text-black p-2 rounded"
@@ -66,7 +84,7 @@ export default function AboutPage() {
             </a>
           </nav>
           {/* Phần tiêu đề với ảnh và chữ */}
-          <section className="flex items-center gap-10 bg-aqua mb-3 p-6 border border-gray-300 rounded-md max-w-4xl mx-auto justify-between">
+          <section className="flex items-center gap-10 bg-aqua mb-3 p-6 border border-gray-400 rounded-md max-w-4xl mx-auto justify-between">
             <a href="#">
               <img
                 src="https://yu.ctu.edu.vn/images/upload/article/2020/03/0305-logo-ctu.png"
@@ -91,10 +109,9 @@ export default function AboutPage() {
             </div>
           </section>
 
-          <section className="overflow-hidden bg-gradient-to-r from-blue-200 via-blue-200 to-blue-200 pt-6 pr-6 pl-6 rounded-t-lg shadow-lg text-black font-semibold leading-relaxed tracking-wide border-gray-200 border-gray-200">
+          <section className="overflow-hidden bg-gradient-to-r from-blue-200 via-blue-200 to-blue-200 pt-6 pr-6 pl-6 rounded-t-lg shadow-lg text-black font-semibold leading-relaxed tracking-wide border border-gray-400">
             <div>
               Trung tâm CUSC – Đào tạo CNTT chất lượng cao & tư vấn tuyển sinh
-              miễn phí.
               <div>
                 Trung tâm hoạt động từ <strong>thứ Hai </strong>đến{' '}
                 <strong>thứ Sáu</strong> hàng tuần:
@@ -115,8 +132,8 @@ export default function AboutPage() {
           </section>
 
           {/* Danh sách các mục */}
-          <section className="max-w-4xl mx-auto border ">
-            <div className="max-w-4xl mx-auto bg-aqua border border-gray-200  shadow-md font-sans">
+          <section className="max-w-4xl mx-auto border  ">
+            <div className="max-w-4xl mx-auto bg-neutral-50 border border-gray-400  shadow-md font-sans">
               {data.map((item, itemIndex) => (
                 <div key={itemIndex} className="mb-8">
                   <h2 className="font-extrabold text-2xl pb-3 border-b border-gray-300 px-6 pt-6">
@@ -131,7 +148,7 @@ export default function AboutPage() {
                       return (
                         <div
                           key={uniqueClassId}
-                          className="mb-6 mt-6 ml-8 rounded-md bg-blue-50 p-4 shadow-sm hover:shadow-md transition-shadow duration-300 mr-6"
+                          className="mb-6 mt-6 ml-8 rounded-md bg-blue-100 p-4 shadow-sm hover:shadow-md transition-shadow duration-300 mr-6"
                         >
                           <p
                             className="flex items-center gap-3 cursor-pointer select-none font-semibold  font-bold text-lg	 text-blue-900 hover:text-red-900 "
@@ -140,7 +157,7 @@ export default function AboutPage() {
                             }
                             aria-expanded={isOpen}
                           >
-                            <span className="text-xl font-bold"></span>
+                            <span className="text-5xl font-bold"></span>
                             {courseItem.name}
                             <svg
                               className={`w-5 h-5 ml-auto transition-transform duration-300 ${
@@ -163,7 +180,7 @@ export default function AboutPage() {
 
                           {isOpen && (
                             <div className="px-6 mt-3">
-                              <ul className="list-disc list-inside list-none  text-gray-700 space-y-2 ">
+                              <ul className="list-disc list-inside list-none text-gray-700 space-y-2 ">
                                 {courseItem.class &&
                                 courseItem.class.length > 0 ? (
                                   courseItem.class.map(
@@ -179,7 +196,7 @@ export default function AboutPage() {
                                         >
                                           <div className="flex items-center justify-between">
                                             <span
-                                              className="cursor-pointer hover:text-blue-600 font-medium"
+                                              className="cursor-pointer text-base	hover:text-blue-600 font-medium"
                                               onClick={() =>
                                                 setOpenClassId(
                                                   isClassOpen
@@ -242,7 +259,7 @@ export default function AboutPage() {
           </section>
 
           {/* Phần trống có thể thêm nội dung */}
-          <section className="max-w-4xl border mx-auto rounded-b-md border-gray-200 bg-gradient-to-r from-blue-200 via-blue-200 to-blue-200">
+          <section className="max-w-4xl border mx-auto rounded-b-md border-gray-400 bg-gradient-to-r from-blue-200 via-blue-200 to-blue-200">
             <footer className="  mb-3  w-full p-6 flex flex-col sm:flex-row gap-6 sm:space-x-16 text-gray-600 text-sm">
               {/* Phần thông tin liên hệ bên trái */}
               <div className="bg-gray-200 p-4 rounded-md shadow-sm max-w-full sm:max-w-xs flex-shrink-0">
@@ -261,10 +278,10 @@ export default function AboutPage() {
                 <p>Hotline: 0901990665 0911204994</p>
               </div>
               {/* Phần menu bên phải */}
-              <div className="flex flex-wrap gap-x-12 gap-y-4 text-gray-400 flex-1 hidden sm:block">
+              <div className="flex flex-wrap gap-x-12 gap-y-4 text-gray-600 flex-1 hidden sm:block">
                 {/* Tuyển sinh */}
                 <div>
-                  <h3 className="font-semibold text-gray-400 mb-2">
+                  <h3 className="font-semibold text-gray-800 mb-2">
                     Tuyển sinh
                   </h3>
                   <ul className="space-y-1">
@@ -276,7 +293,7 @@ export default function AboutPage() {
 
                 {/* Chương trình đào tạo */}
                 <div>
-                  <h3 className="font-semibold text-gray-400 mb-2">
+                  <h3 className="font-semibold text-gray-800 mb-2 pt-3">
                     Chương trình đào tạo
                   </h3>
                   <ul className="space-y-1 max-w-xs">

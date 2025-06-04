@@ -2,22 +2,37 @@ import { Request, Response } from 'express';
 import { SendEmail } from '../email/emailsender';
 import axios from 'axios';
 
-export function PostForm(req: Request, res: Response) {
-  const formData = req.body;
+import { PrismaClient } from '@prisma/client';
 
-  const parts = formData.interested_courses_details.split('___');
+const prisma = new PrismaClient();
+
+export async function PostForm(req: Request, res: Response) {
+  const formData = req.body;
+  // const parts = formData.interested_courses_details.split('___');
+  const getMax = await getMaxStudentId();
+  const countId = (getMax ?? 0) + 1;
+
   let highschool = formData.high_school_name;
-  if (!formData.current_education_level.includes('Học sinh')) {
+  if (
+    formData.current_education_level.includes('Học sinh THPT') ||
+    formData.current_education_level.includes('Sinh viên')
+  ) {
     highschool = 'Đã tốt nghiệp';
   } else if (highschool === '') {
     highschool = 'Null';
   }
 
+  let notification_consent = '';
+  if (formData.notification_consent === 'Đồng ý') {
+    notification_consent = 'Agree';
+  } else if (formData.notification_consent === 'Khác') {
+    notification_consent = 'Other';
+  }
+
   const inputData = [
     {
+      id: countId,
       student_name: formData.student_name,
-      date_of_birth: formData.date_of_birth,
-      gender: formData.gender,
       email: formData.email,
       phone_number: formData.phone_number,
       zalo_phone:
@@ -26,33 +41,24 @@ export function PostForm(req: Request, res: Response) {
           : formData.zalo_phone,
       link_facebook:
         formData.link_facebook === '' ? 'Null' : formData.link_facebook,
+      date_of_birth: formData.date_of_birth,
+      gender: formData.gender,
       current_education_level: formData.current_education_level,
       other_education_level_description:
-        formData.other_education_level_description === '',
+        formData.other_education_level_description,
       high_school_name: highschool,
       city: formData.city === '' ? 'Null' : formData.city,
       source: formData.source,
-      current_status: 'No contact yet',
-      registration_date: formData.registration_date,
+      other_source_description: formData.other_source_description,
+      notification_consent: notification_consent,
+      other_notification_consent_description:
+        formData.other_notification_consent_description,
+      current_status: 'Lead',
+      assigned_counselor_id: 'Null',
       status_change_date: 'Null',
-      student_created_at: 'Null',
-      student_updated_at: 'Null',
-      assigned_counselor_name: 'Null',
-      assigned_counselor_email: 'Null',
-      assigned_counselor_type: 'Null',
-      interested_courses_details: [
-        {
-          course: parts[0],
-          class: parts[1],
-        },
-      ],
-      student_status_history: 'null',
-      last_consultation_date: 'null',
-      last_consultation_duration_minutes: 'null',
-      last_consultation_notes: 'null',
-      last_consultation_type: 'null',
-      last_consultation_status: 'Contact',
-      last_consultation_counselor_name: 'null',
+      registration_date: formData.registration_date,
+      created_at: 'Null',
+      updated_at: 'Null',
     },
   ];
   // Trả lại dữ liệu nhận được cho client
@@ -77,8 +83,48 @@ export async function SendEmailController(req: Request, res: Response) {
   }
 }
 
-export const HelloWorldController = (req: Request, res: Response) => {
-  res.status(200).send('Hello World');
+// Hàm lấy dữ liệu và format lại JSON
+export async function GetCourseCategories() {
+  const khoaHocs = await prisma.khoahoc.findMany({
+    include: { khoahoc_lop: true },
+  });
+
+  const khoaHocsWithLops = await Promise.all(
+    khoaHocs.map(async (khoaHoc) => {
+      const courses = await Promise.all(
+        khoaHoc.khoahoc_lop.map(async (course) => {
+          const lops = await prisma.lop.findMany({
+            where: { ID_KhoaHoc_Lop: course.ID },
+          });
+
+          return {
+            id: course.ID,
+            name: course.Name || '',
+            class: lops.map((cls) => ({ name: cls.Name || '' })),
+          };
+        })
+      );
+
+      return {
+        title: khoaHoc.Name || '',
+        course: courses,
+      };
+    })
+  );
+
+  return khoaHocsWithLops;
+}
+
+// Controller trả dữ liệu JSON
+export const DatauserController = async (req: Request, res: Response) => {
+  try {
+    const coursecategories = await GetCourseCategories();
+
+    res.status(200).json(coursecategories);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
 };
 
 //API gửi trả API giới tính từ tên (tự xây dựng bẳng máy học)
@@ -107,4 +153,14 @@ export async function predictGender(req: Request, res: Response) {
     console.error('Error calling Python API:', error);
     return res.status(500).json({ error: 'Prediction failed' });
   }
+}
+
+export async function getMaxStudentId() {
+  const result = await prisma.students.aggregate({
+    _max: {
+      id: true,
+    },
+  });
+
+  return result._max.id;
 }

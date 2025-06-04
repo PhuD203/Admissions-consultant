@@ -17,9 +17,11 @@ interface FormData {
   city: string;
   highSchoolName: string;
   programsSelected: string[];
-  infoSources: string[];
+  infoSources: string;
   otherInfoSource: string;
   consent: boolean;
+  notificationConsent: string;
+  otherNotificationConsent: string;
 }
 
 const initialFormData: FormData = {
@@ -36,9 +38,11 @@ const initialFormData: FormData = {
   city: '',
   highSchoolName: '',
   programsSelected: [],
-  infoSources: [],
+  infoSources: '',
   otherInfoSource: '',
   consent: false,
+  notificationConsent: '',
+  otherNotificationConsent: '',
 };
 
 const RegistrationForm: React.FC = () => {
@@ -68,32 +72,47 @@ const RegistrationForm: React.FC = () => {
   );
   // Các nguồn thông tin
   const infoSourcesOptions = [
-    'Bạn bè',
-    'Facebook:  Fanpage',
-    'Website:',
-    'Email',
+    'Mail',
+    'Fanpage',
+    'Zalo',
+    'Website',
+    'Friend',
     'SMS',
-    'Bandroll, Poster',
-    'Tờ giới thiệu',
+    'Banderole',
+    'Poster',
+    'Brochure',
     'Google',
-    'Sự kiện, ngày hội việc làm',
+    'Brand',
+    'Event',
+    'Khác',
   ];
 
   const validateForm = () => {
     const newErrors: Partial<Record<keyof FormData, string>> = {};
 
-    if (!formData.fullName.trim())
+    // Xử lý nhập fullname
+    if (!formData.fullName.trim()) {
       newErrors.fullName = 'Vui lòng nhập họ và tên';
+    } else if (formData.fullName.length < 2) {
+      newErrors.fullName = 'Vui lòng nhập họ và tên hợp lệ';
+    } else if (!formData.fullName.trim().includes(' ')) {
+      newErrors.fullName = 'Vui lòng  nhập đủ họ và tên';
+    } else if (!/^[A-Za-zÀ-ỹ\s]+$/u.test(formData.fullName)) {
+      newErrors.fullName = 'Họ tên không được có số và ký tự đặc biệt';
+    }
+
+    //Xử lý nhập ngày sinh
     if (!formData.dob.trim())
       newErrors.dob = 'Vui lòng nhập ngày tháng năm sinh';
-    // if (!formData.gender) newErrors.gender = 'Vui lòng chọn giới tính';
 
+    //Xử lý nhập Sdt
     if (!formData.phoneNumber.trim()) {
       newErrors.phoneNumber = 'Vui lòng nhập số điện thoại thường dùng';
     } else if (!/^\d{10,11}$/.test(formData.phoneNumber)) {
       newErrors.phoneNumber = 'Số điện thoại thường dùng không hợp lệ';
     }
 
+    //Xử lý nhập sdt Zalo
     if (
       formData.zaloPhoneNumber.trim() &&
       !/^\d{10,11}$/.test(formData.zaloPhoneNumber)
@@ -101,19 +120,37 @@ const RegistrationForm: React.FC = () => {
       newErrors.zaloPhoneNumber = 'Số điện thoại Zalo không hợp lệ';
     }
 
+    //Xử lý nhập email
     if (!formData.email.trim()) {
       newErrors.email = 'Vui lòng nhập email thường dùng';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email không hợp lệ';
+    } else if (
+      !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email)
+    ) {
+      newErrors.email = 'Email không hợp lệ, vui lòng nhập lại';
     }
 
+    //Xử lý nhập chấp nhận
+    if (!formData.notificationConsent)
+      newErrors.notificationConsent = 'Vui lòng lựa chọn 1 mục';
+    if (
+      formData.notificationConsent === 'Khác' &&
+      !formData.otherNotificationConsent.trim()
+    ) {
+      newErrors.otherNotificationConsent = 'Vui lòng ghi rõ mục khác';
+    }
+
+    //Xử lý nhập nguồn
+    if (!formData.infoSources.trim()) {
+      newErrors.infoSources = 'Vui lòng chọn ít nhất một nguồn thông tin';
+    }
+    if (formData.infoSources === 'Khác' && !formData.otherInfoSource.trim()) {
+      newErrors.otherInfoSource = 'Vui lòng ghi rõ mục khác';
+    }
+
+    //Xử lý chọn hiện tại bạn là ai
     if (!formData.userType) newErrors.userType = 'Vui lòng chọn bạn là ai';
     if (formData.userType === 'Mục khác' && !formData.otherUserType.trim()) {
       newErrors.otherUserType = 'Vui lòng ghi rõ mục khác';
-    }
-
-    if (formData.infoSources.length === 0) {
-      newErrors.infoSources = 'Vui lòng chọn ít nhất một nguồn thông tin';
     }
 
     setErrors(newErrors);
@@ -126,38 +163,27 @@ const RegistrationForm: React.FC = () => {
     >
   ) => {
     const target = e.target;
+    const { name, type, value, checked } = target as HTMLInputElement;
 
-    if (target instanceof HTMLInputElement) {
-      const { name, type, value, checked } = target;
-
-      if (type === 'checkbox') {
-        if (name === 'programsSelected') {
-          let newPrograms = [...formData.programsSelected];
-          if (checked) {
-            if (!newPrograms.includes(value)) newPrograms.push(value);
-          } else {
-            newPrograms = newPrograms.filter((p) => p !== value);
-          }
-          setFormData((prev) => ({ ...prev, programsSelected: newPrograms }));
-        } else if (name === 'infoSources') {
-          let newSources = [...formData.infoSources];
-          if (checked) {
-            if (!newSources.includes(value)) newSources.push(value);
-          } else {
-            newSources = newSources.filter((s) => s !== value);
-          }
-          setFormData((prev) => ({ ...prev, infoSources: newSources }));
-        } else if (name === 'consent') {
-          setFormData((prev) => ({ ...prev, consent: checked }));
+    if (type === 'checkbox') {
+      if (name === 'programsSelected') {
+        let newPrograms = [...formData.programsSelected];
+        if (checked) {
+          if (!newPrograms.includes(value)) newPrograms.push(value);
+        } else {
+          newPrograms = newPrograms.filter((p) => p !== value);
         }
-      } else {
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        setFormData((prev) => ({ ...prev, programsSelected: newPrograms }));
       }
-    } else if (
-      target instanceof HTMLTextAreaElement ||
-      target instanceof HTMLSelectElement
-    ) {
-      const { name, value } = target;
+      if (name === 'infoSources') {
+        if (checked) {
+          setFormData((prev) => ({ ...prev, infoSources: value }));
+        }
+      } else if (name === 'consent') {
+        setFormData((prev) => ({ ...prev, consent: checked }));
+      }
+    } else {
+      // input text, radio, select, textarea
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
@@ -313,25 +339,13 @@ const RegistrationForm: React.FC = () => {
           other_education_level_description: formData.otherUserType,
           high_school_name: formData.highSchoolName,
           city: formData.city,
-          source: formData.infoSources
-            .filter((src) => src !== 'Khác')
-            .join(', '),
-          // current_status: 'No contact yet',
+          source: formData.infoSources,
+          other_source_description: formData.otherInfoSource,
           registration_date: now.toLocaleString(),
-          // status_change_date: 'null',
-          // student_created_at: 'null',
-          // student_updated_at: 'null',
-          // assigned_counselor_name: 'null',
-          // assigned_counselor_email: 'null',
-          // assigned_counselor_type: 'null',
           interested_courses_details: courseName + '___' + className,
-          // student_status_history: 'null',
-          // last_consultation_date: 'null',
-          // last_consultation_duration_minutes: 'null',
-          // last_consultation_notes: 'null',
-          // last_consultation_type: 'null',
-          // last_consultation_status: 'Contact',
-          // last_consultation_counselor_name: 'null',
+          notification_consent: formData.notificationConsent,
+          other_notification_consent_description:
+            formData.otherNotificationConsent,
         }),
       });
 
@@ -361,7 +375,6 @@ const RegistrationForm: React.FC = () => {
         message={show.message}
         isError={show.errors}
       />
-
       <h2 className="text-3xl font-bold mb-4">
         📝 Đăng ký tư vấn chương trình đào tạo
       </h2>
@@ -518,28 +531,24 @@ const RegistrationForm: React.FC = () => {
             Bạn là: <span className="text-red-600">(Bắt buộc)</span>
           </label>
           <div className="space-y-2 space-x-3">
-            {[
-              'Học sinh THCS',
-              'Học sinh THPT',
-              'Sinh viên',
-              'Người đi làm',
-              'Mục khác',
-            ].map((option) => (
-              <label
-                key={option}
-                className="inline-flex items-center space-x-2"
-              >
-                <input
-                  type="radio"
-                  name="userType"
-                  value={option}
-                  checked={formData.userType === option}
-                  onChange={handleChange}
-                  className="form-radio"
-                />
-                <span>{option}</span>
-              </label>
-            ))}
+            {['Học sinh THPT', 'Sinh viên', 'Người đi làm', 'Mục khác'].map(
+              (option) => (
+                <label
+                  key={option}
+                  className="inline-flex items-center space-x-2"
+                >
+                  <input
+                    type="radio"
+                    name="userType"
+                    value={option}
+                    checked={formData.userType === option}
+                    onChange={handleChange}
+                    className="form-radio"
+                  />
+                  <span>{option}</span>
+                </label>
+              )
+            )}
           </div>
           {formData.userType === 'Mục khác' && (
             <input
@@ -605,54 +614,82 @@ const RegistrationForm: React.FC = () => {
           {infoSourcesOptions.map((source) => (
             <label key={source} className="inline-flex items-center space-x-2">
               <input
-                type="checkbox"
+                type="radio"
                 name="infoSources"
                 value={source}
-                checked={formData.infoSources.includes(source)}
+                checked={formData.infoSources === source}
                 onChange={handleChange}
-                className="form-checkbox"
+                className="form-radio"
               />
               <span>{source}</span>
             </label>
           ))}
-
-          {/* Thêm option 'Khác' */}
-          <label className="inline-flex items-center space-x-2">
-            <input
-              type="checkbox"
-              name="infoSources"
-              value="Khác"
-              checked={formData.infoSources.includes('Khác')}
-              onChange={handleChange}
-              className="form-checkbox"
-            />
-            <span>Khác</span>
-          </label>
         </div>
         {errors.infoSources && (
           <p className="text-red-600 text-sm mt-1">{errors.infoSources}</p>
         )}
+        {/* Nếu chọn 'Khác' thì hiển thị input nhập thêm */}
+        {formData.infoSources === 'Khác' && (
+          <input
+            type="text"
+            name="otherInfoSource"
+            value={formData.otherInfoSource}
+            onChange={handleChange}
+            placeholder="Vui lòng ghi rõ nguồn khác"
+            className={`mt-2 w-full p-2 border rounded ${
+              errors.otherInfoSource ? 'border-red-500' : 'border-gray-300'
+            }`}
+          />
+        )}
+        {errors.otherInfoSource && (
+          <p className="text-red-600 text-sm mt-1">{errors.otherInfoSource}</p>
+        )}
       </fieldset>
       {/* V. Đồng ý nhận thông báo */}
-      {/* <fieldset className="border p-4 rounded">
+      <fieldset className="border p-4 rounded">
         <legend className="font-semibold mb-2">
-          IV. Đồng ý nhận thông báo từ CUSC
+          IV. Đồng ý nhận thông báo từ CUSC qua email hoặc số điện thoại
         </legend>
-        <label className="inline-flex items-center space-x-5 ">
+        <div className="space-y-2 space-x-10">
+          {['Đồng ý', 'Khác'].map((option) => (
+            <label key={option} className="inline-flex items-center space-x-2">
+              <input
+                type="radio"
+                name="notificationConsent"
+                value={option}
+                checked={formData.notificationConsent === option}
+                onChange={handleChange}
+                className="form-radio"
+              />
+              <span>{option}</span>
+            </label>
+          ))}
+        </div>
+        {errors.notificationConsent && (
+          <p className="text-red-600 text-sm mt-1">
+            {errors.notificationConsent}
+          </p>
+        )}
+        {formData.notificationConsent === 'Khác' && (
           <input
-            type="checkbox"
-            name="consent"
-            checked={formData.consent}
+            type="text"
+            name="otherNotificationConsent"
+            value={formData.otherNotificationConsent}
             onChange={handleChange}
-            className="form-checkbox"
+            placeholder="Vui lòng ghi rõ"
+            className={`mt-2 w-full p-2 border rounded ${
+              errors.otherNotificationConsent
+                ? 'border-red-500'
+                : 'border-gray-300'
+            }`}
           />
-          <span>
-            Nhận thông tin mới nhất qua các kênh Email, Facebook, Zalo, SMS về
-            sự kiện, hoạt động cộng đồng, tuyển sinh, công nghệ…
-          </span>
-        </label>
-      </fieldset> */}
-      {/* Submit */}
+        )}
+        {errors.otherNotificationConsent && (
+          <p className="text-red-600 text-sm mt-1">
+            {errors.otherNotificationConsent}
+          </p>
+        )}
+      </fieldset>
       <div>
         <button
           type="submit"
