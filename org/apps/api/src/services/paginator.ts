@@ -47,4 +47,4 @@ class Paginator {
   }
 }
 
-export default Paginator; // Sử dụng export default để dễ dàng import
+export default Paginator;

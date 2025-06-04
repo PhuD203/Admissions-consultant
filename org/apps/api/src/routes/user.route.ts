@@ -3,7 +3,7 @@ import userController from '../controllers/user.controller';
 
 
 export default  (app : any) => {
-  app.use('/api', router);
+  app.use('/api/v1/users', router);
 
-  router.get('/users', userController.getAllUsers);
+  router.get('/', userController.getAllUsers);
 }
