@@ -10,7 +10,7 @@ import { specs } from './docs/swagger';
 import userRouter from './routes/user.route';
 import studentRouter from './routes/student.route';
 import studentStatusHistoryRoute from './routes/student-status-history.route';
-import itemRouter from './app/routers/itemRouter';
+import uploadform from './routes/uploadform.route';
 
 const prisma = new PrismaClient();
 
@@ -54,7 +54,7 @@ app.get('/health', async (req, res) => {
 userRouter(app);
 studentRouter(app);
 studentStatusHistoryRoute(app);
-app.use('/api', itemRouter);
+uploadform(app);
 
 // Server start
 app.listen(port, async () => {

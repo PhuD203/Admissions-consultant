@@ -11,7 +11,7 @@ export interface data {
 }
 
 export async function fetchCourseCategories(): Promise<data[]> {
-  const response = await fetch('http://localhost:3000/api/Datauser');
+  const response = await fetch('http://localhost:3000/api/uploadform/Datauser');
 
   if (!response.ok) {
     throw new Error('Failed to fetch data');

@@ -221,7 +221,7 @@ const RegistrationForm: React.FC = () => {
 
     //-------------------------------------------------------
     // Code API gửi mail tự động
-    fetch('http://localhost:3000/api/sendemail', {
+    fetch('http://localhost:3000/api/uploadform/sendemail', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -285,21 +285,24 @@ const RegistrationForm: React.FC = () => {
     // API gửi trả API giới tính từ tên (tự xây dựng bẳng máy học)
     // let gender;
     // try {
-    //   const response = await fetch('http://localhost:3000/api/predict-gender', {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify({
-    //       name: formData.fullName,
-    //     }),
-    //   });
+    //   const response = await fetch(
+    //     'http://localhost:3000/api/uploadform/predict-gender',
+    //     {
+    //       method: 'POST',
+    //       headers: {
+    //         'Content-Type': 'application/json',
+    //       },
+    //       body: JSON.stringify({
+    //         name: formData.fullName,
+    //       }),
+    //     }
+    //   );
 
     //   if (!response.ok) {
     //     throw new Error('Lỗi khi gửi dữ liệu');
     //   }
     //   const result = await response.json();
-    //   gender = result.gender;
+    //   gender = result.data.gender;
     // } catch (error) {
     //   console.error(error);
     // }
@@ -322,32 +325,35 @@ const RegistrationForm: React.FC = () => {
     // API gửi data đên BE
     const now = new Date();
     try {
-      const response = await fetch('http://localhost:3000/api/submitform', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          student_name: formData.fullName,
-          date_of_birth: formData.dob,
-          gender: formData.gender === '' ? gender : formData.gender,
-          email: formData.email,
-          phone_number: formData.phoneNumber,
-          zalo_phone: formData.zaloPhoneNumber,
-          link_facebook: formData.facebookLink,
-          current_education_level: formData.userType,
-          other_education_level_description: formData.otherUserType,
-          high_school_name: formData.highSchoolName,
-          city: formData.city,
-          source: formData.infoSources,
-          other_source_description: formData.otherInfoSource,
-          registration_date: now.toLocaleString(),
-          interested_courses_details: courseName + '___' + className,
-          notification_consent: formData.notificationConsent,
-          other_notification_consent_description:
-            formData.otherNotificationConsent,
-        }),
-      });
+      const response = await fetch(
+        'http://localhost:3000/api/uploadform/submitform',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            student_name: formData.fullName,
+            date_of_birth: formData.dob,
+            gender: formData.gender === '' ? gender : formData.gender,
+            email: formData.email,
+            phone_number: formData.phoneNumber,
+            zalo_phone: formData.zaloPhoneNumber,
+            link_facebook: formData.facebookLink,
+            current_education_level: formData.userType,
+            other_education_level_description: formData.otherUserType,
+            high_school_name: formData.highSchoolName,
+            city: formData.city,
+            source: formData.infoSources,
+            other_source_description: formData.otherInfoSource,
+            registration_date: now.toLocaleString(),
+            interested_courses_details: courseName + '___' + className,
+            notification_consent: formData.notificationConsent,
+            other_notification_consent_description:
+              formData.otherNotificationConsent,
+          }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error('Lỗi khi gửi dữ liệu');
@@ -530,7 +536,12 @@ const RegistrationForm: React.FC = () => {
           <label className="block font-medium mb-1">
             Bạn là: <span className="text-red-600">(Bắt buộc)</span>
           </label>
-          <div className="space-y-2 space-x-3">
+
+          <div
+            className={`space-y-2 space-x-3 border rounded max-w-120 p-2 pl-3 pb-1 ${
+              errors.userType ? 'border-red-500' : 'border-gray-300'
+            }`}
+          >
             {['Học sinh THPT', 'Sinh viên', 'Người đi làm', 'Mục khác'].map(
               (option) => (
                 <label
@@ -610,7 +621,12 @@ const RegistrationForm: React.FC = () => {
           III. Bạn biết thông tin qua kênh nào?{' '}
           <span className="text-red-600">(Bắt buộc)</span>
         </legend>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border p-2 rounded">
+
+        <div
+          className={`grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border p-2 rounded ${
+            errors.infoSources ? 'border-red-500' : 'border-gray-300'
+          }`}
+        >
           {infoSourcesOptions.map((source) => (
             <label key={source} className="inline-flex items-center space-x-2">
               <input
@@ -646,9 +662,14 @@ const RegistrationForm: React.FC = () => {
         )}
       </fieldset>
       {/* V. Đồng ý nhận thông báo */}
-      <fieldset className="border p-4 rounded">
+      <fieldset
+        className={`border p-4 rounded ${
+          errors.notificationConsent ? 'border-red-500' : 'border-gray-300'
+        }`}
+      >
         <legend className="font-semibold mb-2">
-          IV. Đồng ý nhận thông báo từ CUSC qua email hoặc số điện thoại
+          IV. Đồng ý nhận thông báo từ CUSC qua email hoặc số điện thoại{' '}
+          <span className="text-red-600">(Bắt buộc)</span>
         </legend>
         <div className="space-y-2 space-x-10">
           {['Đồng ý', 'Khác'].map((option) => (
@@ -665,11 +686,7 @@ const RegistrationForm: React.FC = () => {
             </label>
           ))}
         </div>
-        {errors.notificationConsent && (
-          <p className="text-red-600 text-sm mt-1">
-            {errors.notificationConsent}
-          </p>
-        )}
+
         {formData.notificationConsent === 'Khác' && (
           <input
             type="text"
@@ -689,7 +706,13 @@ const RegistrationForm: React.FC = () => {
             {errors.otherNotificationConsent}
           </p>
         )}
+        {errors.notificationConsent && (
+          <p className="text-red-600 text-sm mt-1">
+            {errors.notificationConsent}
+          </p>
+        )}
       </fieldset>
+
       <div>
         <button
           type="submit"

@@ -1,15 +1,15 @@
+import jsend from '../jsend';
 import { Request, Response } from 'express';
-import { SendEmail } from '../email/emailsender';
 import axios from 'axios';
+import studentServices from '../services/student.service';
+import { getCourseCategories } from '../services/cource.service';
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { SendEmail } from '../services/Auto-send-email';
 
 export async function PostForm(req: Request, res: Response) {
   const formData = req.body;
   // const parts = formData.interested_courses_details.split('___');
-  const getMax = await getMaxStudentId();
+  const getMax = await studentServices.getMaxStudentId();
   const countId = (getMax ?? 0) + 1;
 
   let highschool = formData.high_school_name;
@@ -62,76 +62,37 @@ export async function PostForm(req: Request, res: Response) {
     },
   ];
   // Trả lại dữ liệu nhận được cho client
-  return res.status(200).json({
-    message: 'Đăng ký thành công',
-    dataReceived: inputData,
-  });
+  return res.json(
+    jsend.success({
+      message: 'Đăng ký thành công',
+      dataReceived: inputData,
+    })
+  );
 }
 
 export async function SendEmailController(req: Request, res: Response) {
   const { to, subject, text, html } = req.body;
   if (!to || !subject || !text) {
-    return res.status(400).json({ error: 'Thiếu trường bắt buộc' });
+    return res.status(400).json(jsend.error('Thiếu trường bắt buộc'));
   }
-
   try {
     await SendEmail(to, subject, text, html);
-    return res.status(200).json({ message: 'Email đã được gửi' });
+    return res.json(
+      jsend.success({
+        message: 'Email đã được gửi',
+      })
+    );
   } catch (error) {
     console.error('Error in SendEmailController:', error);
-    return res.status(500).json({ error: 'Lỗi khi gửi email' });
+    return res.status(500).json(jsend.error('Lỗi khi gửi email'));
   }
 }
-
-// Hàm lấy dữ liệu và format lại JSON
-export async function GetCourseCategories() {
-  const khoaHocs = await prisma.khoahoc.findMany({
-    include: { khoahoc_lop: true },
-  });
-
-  const khoaHocsWithLops = await Promise.all(
-    khoaHocs.map(async (khoaHoc) => {
-      const courses = await Promise.all(
-        khoaHoc.khoahoc_lop.map(async (course) => {
-          const lops = await prisma.lop.findMany({
-            where: { ID_KhoaHoc_Lop: course.ID },
-          });
-
-          return {
-            id: course.ID,
-            name: course.Name || '',
-            class: lops.map((cls) => ({ name: cls.Name || '' })),
-          };
-        })
-      );
-
-      return {
-        title: khoaHoc.Name || '',
-        course: courses,
-      };
-    })
-  );
-
-  return khoaHocsWithLops;
-}
-
-// Controller trả dữ liệu JSON
-export const DatauserController = async (req: Request, res: Response) => {
-  try {
-    const coursecategories = await GetCourseCategories();
-
-    res.status(200).json(coursecategories);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
-  }
-};
 
 //API gửi trả API giới tính từ tên (tự xây dựng bẳng máy học)
 export async function predictGender(req: Request, res: Response) {
   const { name } = req.body;
   if (!name) {
-    return res.status(400).json({ error: 'Missing name' });
+    return res.status(400).json(jsend.error('Missing name'));
   }
 
   try {
@@ -148,19 +109,24 @@ export async function predictGender(req: Request, res: Response) {
     } else {
       gender = 'Chưa rõ';
     }
-    return res.json({ name, gender });
+    return res.json(
+      jsend.success({
+        name: name,
+        gender: gender,
+      })
+    );
   } catch (error) {
-    console.error('Error calling Python API:', error);
-    return res.status(500).json({ error: 'Prediction failed' });
+    return res.status(500).json(jsend.error('Prediction failed'));
   }
 }
 
-export async function getMaxStudentId() {
-  const result = await prisma.students.aggregate({
-    _max: {
-      id: true,
-    },
-  });
-
-  return result._max.id;
-}
+// Controller trả dữ liệu JSON
+export const DatauserController = async (req: Request, res: Response) => {
+  try {
+    const coursecategories = await getCourseCategories();
+    res.status(200).json(coursecategories);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};

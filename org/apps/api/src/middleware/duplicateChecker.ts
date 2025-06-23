@@ -17,7 +17,7 @@ const data = [
     notification_consent: 'Đồng ý',
     current_status: 'Đang tương tác',
     status_change_date: '2024-03-10 10:00:00',
-    registration_date: null,
+    registration_date: '01:52:16 17/6/2025',
     student_created_at: '2024-03-01 08:30:00',
     student_updated_at: '2024-05-20 15:00:00',
     assigned_counselor_name: 'Trần Thị B',
@@ -50,7 +50,7 @@ const data = [
     notification_consent: 'Đồng ý',
     current_status: 'Đã đăng ký',
     status_change_date: '2024-04-05 09:15:00',
-    registration_date: '2024-04-05',
+    registration_date: '01:52:16 17/6/2025',
     student_created_at: '2024-03-15 11:00:00',
     student_updated_at: '2024-05-20 16:30:00',
     assigned_counselor_name: 'Nguyễn Văn D',
@@ -83,7 +83,7 @@ const data = [
     notification_consent: 'Đồng ý',
     current_status: 'Đã đăng ký',
     status_change_date: '2024-04-05 09:15:00',
-    registration_date: '2024-04-05',
+    registration_date: '01:52:16 17/6/2025',
     student_created_at: '2024-03-15 11:00:00',
     student_updated_at: '2024-05-20 16:30:00',
     assigned_counselor_name: 'Nguyễn Văn D',
@@ -110,16 +110,48 @@ export const isDuplicate = (
   const data_ = req.body;
   const parts = data_.interested_courses_details.split('___');
 
-  const exists = data.some(
-    (item) =>
+  const [timePart2, datePart2] = data_.registration_date.split(' ');
+
+  const [hour2, minute2, second2] = timePart2.split(':').map(Number);
+  const [day2, month2, year2] = datePart2.split('/').map(Number);
+  const currentRegistrationDate = new Date(
+    year2,
+    month2 - 1,
+    day2,
+    hour2,
+    minute2,
+    second2
+  );
+  currentRegistrationDate.setHours(0, 0, 0, 0); // bỏ phần giờ để so sánh theo ngày
+
+  const exists = data.some((item) => {
+    const registeredDateStr = item.registration_date.trim().replace(/"$/, ''); // xóa dấu `"` dư
+
+    // Tách thời gian và ngày từ chuỗi ví dụ: '01:52:16 17/6/2025'
+    const [timePart, datePart] = registeredDateStr.split(' ');
+    const [hour, minute, second] = timePart.split(':').map(Number);
+    const [day, month, year] = datePart.split('/').map(Number);
+
+    // Tạo đối tượng Date từ chuỗi
+    const registeredDate = new Date(year, month - 1, day, hour, minute, second);
+
+    // Ngày sau 3 tháng
+    const after3Months = new Date(registeredDate);
+    after3Months.setMonth(after3Months.getMonth() + 3);
+    after3Months.setHours(0, 0, 0, 0); // bỏ phần giờ
+
+    // So sánh dữ liệu
+    return (
       removeVietnameseTones(item.student_name) ===
         removeVietnameseTones(data_.student_name) &&
       item.email === data_.email &&
-      item.interested_courses_details === parts[1]
-  );
+      item.interested_courses_details === parts[1] &&
+      currentRegistrationDate < after3Months // chỉ cho gửi lại nếu đã hơn 3 tháng
+    );
+  });
 
   if (!exists) {
-    return next();
+    return next(); // Cho phép tiếp tục gửi
   } else {
     return res.status(200).json({
       message: 'Email đã được gửi',

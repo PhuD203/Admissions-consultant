@@ -5,7 +5,7 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = "mysql://root:@localhost:3306/database"
+  url      = "mysql://root:@localhost:3306/cusc_data"
 }
 
 model users {
@@ -293,4 +293,38 @@ enum students_current_status {
   Registered
   Dropped_Out @map("Dropped Out")
   Archived
+}
+
+
+
+
+
+
+
+
+
+
+model khoahoc {
+  ID          String        @id @db.VarChar(4)
+  Name        String?       @db.VarChar(50)
+  khoahoc_lop khoahoc_lop[]
+}
+
+model khoahoc_lop {
+  ID         String   @id @db.VarChar(4)
+  Name       String?  @db.VarChar(50)
+  ID_KhoaHoc String?  @db.VarChar(4)
+  khoahoc    khoahoc? @relation(fields: [ID_KhoaHoc], references: [ID], onDelete: Restrict, onUpdate: Restrict, map: "khoahoc_lop_ibfk_1")
+
+  @@index([ID_KhoaHoc], map: "ID_KhoaHoc")
+}
+
+model lop {
+  ID             String  @id @db.VarChar(4)
+  Name           String? @db.VarChar(50)
+  ID_KhoaHoc_Lop String? @db.VarChar(4)
+  lop            lop?    @relation("lopTolop", fields: [ID_KhoaHoc_Lop], references: [ID], onDelete: Restrict, onUpdate: Restrict, map: "lop_ibfk_1")
+  other_lop      lop[]   @relation("lopTolop")
+
+  @@index([ID_KhoaHoc_Lop], map: "ID_KhoaHoc_Lop")
 }
