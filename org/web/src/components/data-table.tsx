@@ -1,8 +1,8 @@
-"use client"
+'use client';
 
-import * as React from "react"
-import Search from "./search"
-import { useCallback } from "react"
+import * as React from 'react';
+import Search from './search';
+import { useCallback } from 'react';
 import {
   DndContext,
   KeyboardSensor,
@@ -13,15 +13,15 @@ import {
   useSensors,
   type DragEndEvent,
   type UniqueIdentifier,
-} from "@dnd-kit/core"
-import { restrictToVerticalAxis } from "@dnd-kit/modifiers"
+} from '@dnd-kit/core';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import {
   SortableContext, // Corrected import source
   arrayMove,
   useSortable, // Corrected import source
   verticalListSortingStrategy,
-} from "@dnd-kit/sortable" // Changed from @dnd-kit/utilities
-import { CSS } from "@dnd-kit/utilities" // This is still correct for CSS utility
+} from '@dnd-kit/sortable'; // Changed from @dnd-kit/utilities
+import { CSS } from '@dnd-kit/utilities'; // This is still correct for CSS utility
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -36,9 +36,8 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from "@tanstack/react-table"
+} from '@tanstack/react-table';
 import {
-  CheckCircle2Icon,
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -49,23 +48,27 @@ import {
   LoaderIcon,
   MoreVerticalIcon,
   PlusIcon,
-  CalendarIcon
-} from "lucide-react"
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
-import { toast } from "sonner"
-import { z } from "zod"
-import { format } from "date-fns" // Dùng date-fns để format ngày tháng
+  CalendarIcon,
+  XCircleIcon,
+  MessageSquareIcon,
+  ArchiveIcon,
+  CheckCircle2Icon,
+} from 'lucide-react';
+import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
+import { toast } from 'sonner';
+import { z } from 'zod';
+import { format } from 'date-fns'; // Dùng date-fns để format ngày tháng
 
-import { useIsMobile } from "@/hooks/use-mobile"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/chart"
-import { Checkbox } from "@/components/ui/checkbox"
+} from '@/components/ui/chart';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -74,18 +77,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuRadioGroup,
-  DropdownMenuRadioItem
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+  DropdownMenuRadioItem,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import {
   Sheet,
   SheetClose,
@@ -95,7 +98,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet"
+} from '@/components/ui/sheet';
 import {
   Table,
   TableBody,
@@ -103,58 +106,62 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
+} from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-import { cn } from "@/lib/utils"
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 
-export const schema = z.object({
-  student_id: z.number(),
-  student_name: z.string(),
-  email: z.string().email().nullable(),
-  phone_number: z.string(),
-  zalo_phone: z.string().nullable(),
-  link_facebook: z.string().url().nullable(),
-  date_of_birth: z.string().nullable(),
-  current_education_level: z.string(),
-  other_education_level_description: z.string().nullable(),
-  high_school_name: z.string().nullable(),
-  city: z.string(),
-  source: z.string(),
-  notification_consent: z.string(),
-  current_status: z.string(),
-  status_change_date: z.string().nullable(), // Nullable
-  registration_date: z.string().nullable(),
-  student_created_at: z.string(),
-  student_updated_at: z.string(),
-  assigned_counselor_name: z.string(),
-  assigned_counselor_type: z.string(),
-  interested_courses_details: z.string().nullable(),
-  enrolled_courses_details: z.string().nullable(),
-  student_status_history: z.string().nullable(),
-  last_consultation_date: z.string().nullable(),
-  last_consultation_duration_minutes: z.number().nullable(),
-  last_consultation_notes: z.string().nullable(),
-  last_consultation_type: z.string().nullable(),
-  last_consultation_status: z.string().nullable(),
-  last_consultation_counselor_name: z.string().nullable(),
-})
+import {
+  consultingDataSchema,
+  ConsultingTableRow,
+  Metadata,
+} from '@/lib/schema/consulting-data-schema';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
+interface DataTableProps {
+  data: ConsultingTableRow[];
+  metadata: Metadata;
+  onPageChange: (page: number) => void;
+  onItemsPerPageChange?: (limit: number) => void;
+  onSearch: (searchTerm: string) => void;
+  onUpdate: (
+    studentId: number,
+    updateData: Partial<ConsultingTableRow>
+  ) => Promise<void>;
+  currentSearchTerm: string;
+  isSearching: boolean;
+  initialSearchTerm?: string;
+  isUpdating?: boolean;
+}
+
+const columnNamesMap: {
+  current_education_level: string;
+  current_status: string;
+  phone_number: string;
+  email: string;
+  last_consultation_date: string;
+  source: string;
+  assigned_counselor_name: string;
+  [key: string]: string;
+} = {
+  current_education_level: 'Trình độ học vấn',
+  current_status: 'Trạng thái',
+  phone_number: 'Số điện thoại',
+  email: 'Email',
+  last_consultation_date: 'Ngày tư vấn gần nhất',
+  source: 'Nguồn',
+  assigned_counselor_name: 'Người tư vấn',
+};
 // Create a separate component for the drag handle
 function DragHandle({ id }: { id: number }) {
   const { attributes, listeners } = useSortable({
     id,
-  })
+  });
 
   return (
     <Button
@@ -167,23 +174,38 @@ function DragHandle({ id }: { id: number }) {
       <GripVerticalIcon className="size-3 text-muted-foreground" />
       <span className="sr-only">Drag to reorder</span>
     </Button>
-  )
+  );
 }
+const getDaysDifference = (date1: any, date2: any) => {
+  const diffTime = Math.abs(date2 - date1);
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+};
 
-const columns: ColumnDef<z.infer<typeof schema>>[] = [
+const isConsultationOverdue = (
+  lastConsultationDate: any,
+  daysThreshold = 2
+) => {
+  if (!lastConsultationDate) return false;
+
+  const today = new Date();
+  const consultationDate = new Date(lastConsultationDate);
+  return getDaysDifference(today, consultationDate) >= daysThreshold;
+};
+
+const columns: ColumnDef<ConsultingTableRow>[] = [
   {
-    id: "drag",
+    id: 'drag',
     header: () => null,
     cell: ({ row }) => <DragHandle id={row.original.student_id} />,
   },
   {
-    id: "select",
+    id: 'select',
     header: ({ table }) => (
       <div className="flex items-center justify-center">
         <Checkbox
           checked={
             table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
+            (table.getIsSomePageRowsSelected() && 'indeterminate')
           }
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
@@ -203,16 +225,17 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: "student_name",
-    header: "Tên Sinh Viên",
-    cell: ({ row }) => {
-      return <TableCellViewer item={row.original} />
+    accessorKey: 'student_name',
+    header: 'Tên Sinh Viên',
+    cell: ({ row, table }) => {
+      const onUpdate = (table.options.meta as any)?.onUpdate;
+      return <TableCellViewer item={row.original} onUpdate={onUpdate} />;
     },
     enableHiding: false,
   },
   {
-    accessorKey: "current_education_level",
-    header: "Trình Độ Học Vấn",
+    accessorKey: 'current_education_level',
+    header: 'Trình Độ Học Vấn',
     cell: ({ row }) => (
       <div className="w-32">
         <Badge variant="outline" className="px-1.5 text-muted-foreground">
@@ -222,7 +245,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
     ),
   },
   {
-    accessorKey: "current_status",
+    accessorKey: 'current_status',
     header: ({ column }) => {
       const currentFilter = column.getFilterValue() as string | undefined;
 
@@ -242,15 +265,25 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
             <DropdownMenuRadioGroup
               value={currentFilter}
               onValueChange={(value) => {
-                column.setFilterValue(value === "all" ? undefined : value);
+                column.setFilterValue(value === 'all' ? undefined : value);
               }}
             >
               <DropdownMenuRadioItem value="all">Tất cả</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="Lead">Lead</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="Engaging">Engaging</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="Enrolled">Enrolled</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="Dropped Out">Dropped Out</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="Completed">Completed</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="Tiềm năng">
+                Tiềm năng
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="Đang tương tác">
+                Đang tư vấn
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="Đã đăng ký">
+                Đã đăng ký
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="Thôi học">
+                Đã ngừng
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="Lưu trữ">
+                Đã lưu trữ
+              </DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -261,8 +294,14 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
         variant="outline"
         className="flex gap-1 px-1.5 text-muted-foreground [&_svg]:size-3"
       >
-        {row.original.current_status === "Engaging" ? (
+        {row.original.current_status === 'Đã đăng ký' ? (
           <CheckCircle2Icon className="text-green-500 dark:text-green-400" />
+        ) : row.original.current_status === 'Thôi học' ? (
+          <XCircleIcon className="text-red-500 dark:text-red-400" />
+        ) : row.original.current_status === 'Đang tương tác' ? (
+          <MessageSquareIcon className="text-yellow-500 dark:text-yellow-400" />
+        ) : row.original.current_status === 'Lưu trữ' ? (
+          <ArchiveIcon className="text-gray-500 dark:text-gray-400" />
         ) : (
           <LoaderIcon />
         )}
@@ -271,38 +310,72 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
     ),
   },
   {
-    accessorKey: "phone_number",
-    header: "Số Điện Thoại",
+    accessorKey: 'phone_number',
+    header: 'Số Điện Thoại',
     cell: ({ row }) => row.original.phone_number,
   },
   {
-    accessorKey: "email",
-    header: "Email",
+    accessorKey: 'email',
+    header: 'Email',
     cell: ({ row }) => row.original.email,
   },
   {
-    accessorKey: "last_consultation_date",
-    header: "Ngày tư vấn gần nhất",
-    cell: ({ row }) => row.original.last_consultation_date,
+    accessorKey: 'last_consultation_date',
+    header: 'Ngày tư vấn gần nhất',
+    cell: ({ row }) => {
+      // Hàm kiểm tra ngày tư vấn gần nhất
+      const isConsultationOverdue = (lastConsultationDate: any) => {
+        if (!lastConsultationDate) return false;
+
+        const today = new Date();
+        const consultationDate = new Date(lastConsultationDate);
+        const diffTime = Math.abs(today.getTime() - consultationDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        return diffDays >= 2;
+      };
+
+      const isOverdue = isConsultationOverdue(
+        row.original.last_consultation_date
+      );
+      const formattedDate = row.original.last_consultation_date || 'Chưa có';
+
+      return (
+        <span
+          className={`${
+            isOverdue
+              ? 'text-red-600 font-medium bg-red-50 px-2 py-1 rounded dark:text-red-400 dark:bg-red-950'
+              : 'text-foreground'
+          }`}
+        >
+          {formattedDate}
+        </span>
+      );
+    },
   },
   {
-    accessorKey: "source",
-    header: "Nguồn",
+    accessorKey: 'source',
+    header: 'Nguồn',
     cell: ({ row }) => row.original.source,
   },
   {
-    accessorKey: "assigned_counselor_name",
-    header: "Người Tư Vấn",
+    accessorKey: 'assigned_counselor_name',
+    header: 'Người Tư Vấn',
     cell: ({ row }) => {
-      const isAssigned = row.original.assigned_counselor_name !== "" && row.original.assigned_counselor_name !== null
+      const isAssigned =
+        row.original.assigned_counselor_name !== '' &&
+        row.original.assigned_counselor_name !== null;
 
       if (isAssigned) {
-        return row.original.assigned_counselor_name
+        return row.original.assigned_counselor_name;
       }
 
       return (
         <>
-          <Label htmlFor={`${row.original.student_id}-counselor`} className="sr-only">
+          <Label
+            htmlFor={`${row.original.student_id}-counselor`}
+            className="sr-only"
+          >
             Người Tư Vấn
           </Label>
           <Select>
@@ -318,11 +391,11 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
             </SelectContent>
           </Select>
         </>
-      )
+      );
     },
   },
   {
-    id: "actions",
+    id: 'actions',
     cell: () => (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -345,16 +418,16 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
       </DropdownMenu>
     ),
   },
-]
+];
 
-function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
+function DraggableRow({ row }: { row: Row<ConsultingTableRow> }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
     id: row.original.student_id,
-  })
+  });
 
   return (
     <TableRow
-      data-state={row.getIsSelected() && "selected"}
+      data-state={row.getIsSelected() && 'selected'}
       data-dragging={isDragging}
       ref={setNodeRef}
       className="relative z-0 data-[dragging=true]:z-10 data-[dragging=true]:opacity-80"
@@ -369,79 +442,130 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
         </TableCell>
       ))}
     </TableRow>
-  )
+  );
 }
 
 export function DataTable({
-                            data: initialData,
-                          }: {
-  data: z.infer<typeof schema>[]
-}) {
-  const [data, setData] = React.useState(() => initialData)
-  const [rowSelection, setRowSelection] = React.useState({})
+  data: serverData, // Đổi tên initialData thành serverData để rõ ràng hơn
+  metadata, // Nhận metadata từ props
+  onPageChange,
+  onItemsPerPageChange,
+  onUpdate,
+  onSearch,
+  currentSearchTerm,
+  initialSearchTerm,
+  isUpdating = false,
+}: DataTableProps) {
+  // Bỏ state `data` cục bộ nếu bạn không cần drag-and-drop cho dữ liệu phân trang
+  // Nếu bạn VẪN cần drag-and-drop, bạn phải suy nghĩ lại logic hoặc chỉ cho phép drag-drop trên dữ liệu của trang hiện tại.
+  // Hiện tại, để đơn giản hóa pagination, tôi sẽ giả định bạn không cần drag-drop cho server-side pagination.
+  // Nếu vẫn cần Drag & Drop, bạn cần chỉnh sửa `setData` để nó thay đổi dữ liệu từ serverData (không phải local state).
+  // Tuy nhiên, việc thực hiện kéo thả trên dữ liệu được phân trang từ server rất phức tạp.
+  // Đối với trường hợp này, tôi sẽ tập trung vào việc sửa phân trang trước.
+  const [data, setData] = React.useState(serverData); // Giữ lại nếu drag-drop là bắt buộc và bạn chỉ drag trên trang hiện tại
+
+  // Sử dụng useEffect để cập nhật `data` khi `serverData` thay đổi (tức là khi API trả về trang mới)
+  React.useEffect(() => {
+    setData(serverData);
+  }, [serverData]);
+
+  const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({})
+    React.useState<VisibilityState>({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
-  )
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [pagination, setPagination] = React.useState({
-    pageIndex: 0,
-    pageSize: 10,
-  })
-  const sortableId = React.useId()
+  );
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+
+  const handleStudentUpdate = async (
+    studentId: number,
+    updateData: Partial<ConsultingTableRow>
+  ) => {
+    try {
+      await onUpdate(studentId, updateData);
+      toast.success('Cập nhật thông tin sinh viên thành công');
+    } catch (error) {
+      console.error('Lỗi khi cập nhật sinh viên:', error);
+      toast.error('Có lỗi xảy ra khi cập nhật thông tin');
+    }
+  };
+
+  // Bỏ quản lý pagination state ở đây. React Table sẽ điều khiển nó thông qua props.
+  // const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 10, });
+
+  const sortableId = React.useId();
   const sensors = useSensors(
     useSensor(MouseSensor, {}),
     useSensor(TouchSensor, {}),
     useSensor(KeyboardSensor, {})
-  )
+  );
 
   const dataIds = React.useMemo<UniqueIdentifier[]>(
     () => data?.map(({ student_id }) => student_id) || [],
     [data]
-  )
+  );
 
   const table = useReactTable({
-    data,
+    data: serverData, // Sử dụng dữ liệu trực tiếp từ props (đã được fetch theo trang)
     columns,
+    meta: {
+      onUpdate: onUpdate, // Truyền prop onUpdate vào meta
+    },
     state: {
       sorting,
       columnVisibility,
       rowSelection,
       columnFilters,
-      pagination,
+      // Bỏ pagination state ở đây và chuyển sang external control
+      pagination: {
+        pageIndex: metadata.page - 1, // pageIndex là 0-based
+        pageSize: metadata.limit,
+      },
     },
+    // Bỏ onPaginationChange
+    // onPaginationChange: setPagination,
+
+    // Cần cung cấp manual pagination flags
+    manualPagination: true, // RẤT QUAN TRỌNG: Nói với React Table rằng pagination được quản lý thủ công (bởi server)
+    pageCount: metadata.lastPage, // RẤT QUAN TRỌNG: Cung cấp tổng số trang từ metadata
+
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    // Bỏ getPaginationRowModel() - vì pagination là manual
+    getSortedRowModel: getSortedRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
     getRowId: (row) => row.student_id.toString(),
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
-    onPaginationChange: setPagination,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-  })
+  });
 
-  const handleSearch = useCallback((searchTerm: string) => {
-    if (searchTerm) {
-      table.getColumn('student_name')?.setFilterValue(searchTerm);
-    } else {
-      table.getColumn('student_name')?.setFilterValue(undefined);
-    }
-  }, [table]);
+  const handleSearch = useCallback(
+    (searchTerm: string) => {
+      // Logic tìm kiếm này vẫn là client-side. Nếu bạn muốn tìm kiếm server-side,
+      // bạn sẽ cần truyền searchTerm lên page.tsx và sau đó vào useConsultingList.
+      if (searchTerm) {
+        table.getColumn('student_name')?.setFilterValue(searchTerm);
+      } else {
+        table.getColumn('student_name')?.setFilterValue(undefined);
+      }
+    },
+    [table]
+  );
 
   function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event
+    const { active, over } = event;
     if (active && over && active.id !== over.id) {
       setData((data) => {
-        const oldIndex = dataIds.indexOf(active.id)
-        const newIndex = dataIds.indexOf(over.id)
-        return arrayMove(data, oldIndex, newIndex)
-      })
+        // Lưu ý: Dragging sẽ chỉ hoạt động trên dữ liệu của trang hiện tại.
+        // Việc reorder và gửi lên server phức tạp hơn nếu bạn muốn thay đổi thứ tự toàn bộ.
+        const oldIndex = dataIds.indexOf(active.id);
+        const newIndex = dataIds.indexOf(over.id);
+        return arrayMove(data, oldIndex, newIndex);
+      });
     }
   }
 
@@ -463,16 +587,13 @@ export function DataTable({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="overview">Tổng Quan</SelectItem>
-
           </SelectContent>
         </Select>
         <TabsList className="@4xl/main:flex hidden">
           <TabsTrigger value="overview">Tổng Quan</TabsTrigger>
-
-
         </TabsList>
         <div className="flex items-center gap-2">
-          <Search onSearch={handleSearch} />
+          <Search onSearch={onSearch} initialSearchTerm={currentSearchTerm} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
@@ -487,22 +608,26 @@ export function DataTable({
                 .getAllColumns()
                 .filter(
                   (column) =>
-                    typeof column.accessorFn !== "undefined" &&
+                    typeof column.accessorFn !== 'undefined' &&
                     column.getCanHide()
                 )
                 .map((column) => {
+                  // Lấy tên tiếng Việt từ columnNamesMap, nếu không có thì dùng column.id
+                  const displayColumnName =
+                    columnNamesMap[column.id] || column.id;
+
                   return (
                     <DropdownMenuCheckboxItem
                       key={column.id}
-                      className="capitalize"
+                      className="capitalize" // Bạn có thể bỏ className="capitalize" nếu muốn giữ nguyên chữ cái đầu của tên tiếng Việt
                       checked={column.getIsVisible()}
                       onCheckedChange={(value) =>
                         column.toggleVisibility(!!value)
                       }
                     >
-                      {column.id}
+                      {displayColumnName} {/* Sử dụng tên tiếng Việt ở đây */}
                     </DropdownMenuCheckboxItem>
-                  )
+                  );
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -534,11 +659,11 @@ export function DataTable({
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
                         </TableHead>
-                      )
+                      );
                     })}
                   </TableRow>
                 ))}
@@ -546,9 +671,10 @@ export function DataTable({
               <TableBody className="**:data-[slot=table-cell]:first:w-8">
                 {table.getRowModel().rows?.length ? (
                   <SortableContext
-                    items={dataIds}
+                    items={dataIds} // dataIds bây giờ lấy từ id của Row objects
                     strategy={verticalListSortingStrategy}
                   >
+                    {/* SỬA LỖI TẠI ĐÂY: Dùng table.getRowModel().rows để map */}
                     {table.getRowModel().rows.map((row) => (
                       <DraggableRow key={row.id} row={row} />
                     ))}
@@ -567,9 +693,10 @@ export function DataTable({
             </Table>
           </DndContext>
         </div>
+        {/* Pagination Controls */}
         <div className="flex items-center justify-between px-4">
           <div className="hidden flex-1 text-sm text-muted-foreground lg:flex">
-            {table.getFilteredSelectedRowModel().rows.length} trong{" "}
+            {table.getFilteredSelectedRowModel().rows.length} trong{' '}
             {table.getFilteredRowModel().rows.length} hàng đã chọn.
           </div>
           <div className="flex w-full items-center gap-8 lg:w-fit">
@@ -578,14 +705,17 @@ export function DataTable({
                 Số hàng mỗi trang
               </Label>
               <Select
-                value={`${table.getState().pagination.pageSize}`}
+                value={`${metadata.limit}`} // Sử dụng metadata.limit
                 onValueChange={(value) => {
-                  table.setPageSize(Number(value))
+                  if (onItemsPerPageChange) {
+                    // KIỂM TRA SỰ TỒN TẠI TRƯỚC KHI GỌI
+                    onItemsPerPageChange(Number(value)); // Gọi hàm prop
+                  }
                 }}
               >
                 <SelectTrigger className="w-20" id="rows-per-page">
                   <SelectValue
-                    placeholder={table.getState().pagination.pageSize}
+                    placeholder={metadata.limit} // Sử dụng metadata.limit
                   />
                 </SelectTrigger>
                 <SelectContent side="top">
@@ -598,15 +728,15 @@ export function DataTable({
               </Select>
             </div>
             <div className="flex w-fit items-center justify-center text-sm font-medium">
-              Trang {table.getState().pagination.pageIndex + 1} của{" "}
-              {table.getPageCount()}
+              Trang {metadata.page} của {metadata.lastPage}{' '}
+              {/* Sử dụng metadata.page và metadata.lastPage */}
             </div>
             <div className="ml-auto flex items-center gap-2 lg:ml-0">
               <Button
                 variant="outline"
                 className="hidden h-8 w-8 p-0 lg:flex"
-                onClick={() => table.setPageIndex(0)}
-                disabled={!table.getCanPreviousPage()}
+                onClick={() => onPageChange(1)} // Gọi hàm prop, trang 1
+                disabled={metadata.page <= 1} // Vô hiệu hóa nếu đang ở trang đầu
               >
                 <span className="sr-only">Đi đến trang đầu tiên</span>
                 <ChevronsLeftIcon />
@@ -615,8 +745,8 @@ export function DataTable({
                 variant="outline"
                 className="size-8"
                 size="icon"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
+                onClick={() => onPageChange(metadata.page - 1)} // Gọi hàm prop, trang trước
+                disabled={metadata.page <= 1} // Vô hiệu hóa nếu đang ở trang đầu
               >
                 <span className="sr-only">Đi đến trang trước</span>
                 <ChevronLeftIcon />
@@ -625,8 +755,8 @@ export function DataTable({
                 variant="outline"
                 className="size-8"
                 size="icon"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
+                onClick={() => onPageChange(metadata.page + 1)} // Gọi hàm prop, trang tiếp theo
+                disabled={metadata.page >= metadata.lastPage} // Vô hiệu hóa nếu đang ở trang cuối
               >
                 <span className="sr-only">Đi đến trang tiếp theo</span>
                 <ChevronRightIcon />
@@ -635,8 +765,8 @@ export function DataTable({
                 variant="outline"
                 className="hidden size-8 lg:flex"
                 size="icon"
-                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                disabled={!table.getCanNextPage()}
+                onClick={() => onPageChange(metadata.lastPage)} // Gọi hàm prop, trang cuối
+                disabled={metadata.page >= metadata.lastPage} // Vô hiệu hóa nếu đang ở trang cuối
               >
                 <span className="sr-only">Đi đến trang cuối cùng</span>
                 <ChevronsRightIcon />
@@ -646,24 +776,24 @@ export function DataTable({
         </div>
       </TabsContent>
     </Tabs>
-  )
+  );
 }
 
 const chartData = [
-  { month: "Tháng 1", visitors: 186 },
-  { month: "Tháng 2", visitors: 305 },
-  { month: "Tháng 3", visitors: 237 },
-  { month: "Tháng 4", visitors: 73 },
-  { month: "Tháng 5", visitors: 209 },
-  { month: "Tháng 6", visitors: 214 },
-]
+  { month: 'Tháng 1', visitors: 186 },
+  { month: 'Tháng 2', visitors: 305 },
+  { month: 'Tháng 3', visitors: 237 },
+  { month: 'Tháng 4', visitors: 73 },
+  { month: 'Tháng 5', visitors: 209 },
+  { month: 'Tháng 6', visitors: 214 },
+];
 
 const chartConfig = {
   visitors: {
-    label: "Lượt truy cập",
-    color: "var(--primary)",
+    label: 'Lượt truy cập',
+    color: 'var(--primary)',
   },
-} satisfies ChartConfig
+} satisfies ChartConfig;
 
 // Utility function to filter out null, undefined, or empty string values
 const filterEmptyValues = (obj: Record<string, any>) => {
@@ -672,7 +802,7 @@ const filterEmptyValues = (obj: Record<string, any>) => {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
       const value = obj[key];
       // Bỏ qua null, undefined, và chuỗi rỗng
-      if (value !== null && value !== "" && value !== undefined) {
+      if (value !== null && value !== '' && value !== undefined) {
         filtered[key] = value;
       }
     }
@@ -680,85 +810,262 @@ const filterEmptyValues = (obj: Record<string, any>) => {
   return filtered;
 };
 
-function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
+function TableCellViewer({
+  item,
+  onUpdate,
+}: {
+  item: z.infer<typeof consultingDataSchema>;
+  onUpdate?: (
+    studentId: number,
+    updateData: Partial<ConsultingTableRow>
+  ) => Promise<void>;
+}) {
   const isMobile = useIsMobile();
 
   // Initialize states with item data
+  const [initialData, setInitialData] = React.useState(item);
+
+  React.useEffect(() => {
+    setInitialData(item);
+    resetForm(item);
+  }, [item]);
   const [studentName, setStudentName] = React.useState(item.student_name);
-  const [email, setEmail] = React.useState(item.email ?? "");
+  const [email, setEmail] = React.useState(item.email ?? '');
   const [phoneNumber, setPhoneNumber] = React.useState(item.phone_number);
-  const [zaloPhone, setZaloPhone] = React.useState(item.zalo_phone ?? "");
-  const [linkFacebook, setLinkFacebook] = React.useState(item.link_facebook ?? "");
+  const [zaloPhone, setZaloPhone] = React.useState(item.zalo_phone ?? '');
+  const [linkFacebook, setLinkFacebook] = React.useState(
+    item.link_facebook ?? ''
+  );
   const [dateOfBirth, setDateOfBirth] = React.useState<Date | undefined>(
     item.date_of_birth ? new Date(item.date_of_birth) : undefined
   );
-  const [currentEducationLevel, setCurrentEducationLevel] = React.useState(item.current_education_level);
-  const [otherEducationLevelDescription, setOtherEducationLevelDescription] = React.useState(item.other_education_level_description ?? "");
-  const [highSchoolName, setHighSchoolName] = React.useState(item.high_school_name ?? "");
+  const [currentEducationLevel, setCurrentEducationLevel] = React.useState(
+    item.current_education_level
+  );
+  const [otherEducationLevelDescription, setOtherEducationLevelDescription] =
+    React.useState(item.other_education_level_description ?? '');
+  const [highSchoolName, setHighSchoolName] = React.useState(
+    item.high_school_name ?? ''
+  );
   const [city, setCity] = React.useState(item.city);
   const [source, setSource] = React.useState(item.source);
-  const [notificationConsent, setNotificationConsent] = React.useState(item.notification_consent);
+  const [notificationConsent, setNotificationConsent] = React.useState(
+    item.notification_consent
+  );
   const [currentStatus, setCurrentStatus] = React.useState(item.current_status);
-  const [statusChangeDate, setStatusChangeDate] = React.useState<Date | undefined>(
-    item.status_change_date ? new Date(item.status_change_date) : undefined
-  );
-  const [registrationDate, setRegistrationDate] = React.useState<Date | undefined>(
-    item.registration_date ? new Date(item.registration_date) : undefined
-  );
+  const [statusChangeDate, setStatusChangeDate] = React.useState<
+    Date | undefined
+  >(item.status_change_date ? new Date(item.status_change_date) : undefined);
+  const [registrationDate, setRegistrationDate] = React.useState<
+    Date | undefined
+  >(item.registration_date ? new Date(item.registration_date) : undefined);
   // student_created_at and student_updated_at are read-only, no need for useState if not modified by user
-  const [assignedCounselorName, setAssignedCounselorName] = React.useState(item.assigned_counselor_name);
-  const [assignedCounselorType, setAssignedCounselorType] = React.useState(item.assigned_counselor_type);
-  const [interestedCoursesDetails, setInterestedCoursesDetails] = React.useState(item.interested_courses_details ?? "");
-  const [enrolledCoursesDetails, setEnrolledCoursesDetails] = React.useState(item.enrolled_courses_details ?? "");
-  const [studentStatusHistoryNotes, setStudentStatusHistoryNotes] = React.useState(item.student_status_history ?? ""); // Renamed to avoid confusion with the table name
-  const [lastConsultationDate, setLastConsultationDate] = React.useState<Date | undefined>(
-    item.last_consultation_date ? new Date(item.last_consultation_date) : undefined
+  const [assignedCounselorName, setAssignedCounselorName] = React.useState(
+    item.assigned_counselor_name
   );
-  const [lastConsultationDurationMinutes, setLastConsultationDurationMinutes] = React.useState<number | string>(item.last_consultation_duration_minutes ?? "");
-  const [lastConsultationNotes, setLastConsultationNotes] = React.useState(item.last_consultation_notes ?? "");
-  const [lastConsultationType, setLastConsultationType] = React.useState(item.last_consultation_type ?? "");
-  const [lastConsultationStatus, setLastConsultationStatus] = React.useState(item.last_consultation_status ?? "");
-  const [lastConsultationCounselorName, setLastConsultationCounselorName] = React.useState(item.last_consultation_counselor_name ?? "");
+  const [assignedCounselorType, setAssignedCounselorType] = React.useState(
+    item.assigned_counselor_type
+  );
+  const [interestedCoursesDetails, setInterestedCoursesDetails] =
+    React.useState(item.interested_courses_details ?? '');
+  const [enrolledCoursesDetails, setEnrolledCoursesDetails] = React.useState(
+    item.enrolled_courses_details ?? ''
+  );
+  const [studentStatusHistoryNotes, setStudentStatusHistoryNotes] =
+    React.useState(item.student_status_history ?? ''); // Renamed to avoid confusion with the table name
+  const [lastConsultationDate, setLastConsultationDate] = React.useState<
+    Date | undefined
+  >(
+    item.last_consultation_date
+      ? new Date(item.last_consultation_date)
+      : undefined
+  );
+  const [lastConsultationDurationMinutes, setLastConsultationDurationMinutes] =
+    React.useState<number | string>(
+      item.last_consultation_duration_minutes ?? ''
+    );
+  const [lastConsultationNotes, setLastConsultationNotes] = React.useState(
+    item.last_consultation_notes ?? ''
+  );
+  const [lastConsultationType, setLastConsultationType] = React.useState(
+    item.last_consultation_type ?? ''
+  );
+  const [lastConsultationStatus, setLastConsultationStatus] = React.useState(
+    item.last_consultation_status ?? ''
+  );
+  const [lastConsultationCounselorName, setLastConsultationCounselorName] =
+    React.useState(item.last_consultation_counselor_name ?? '');
 
   // UI states for expandable fields
   const [showStatusHistory, setShowStatusHistory] = React.useState(false);
-  const [showInterestedCourses, setShowInterestedCourses] = React.useState(false);
+  const [showInterestedCourses, setShowInterestedCourses] =
+    React.useState(false);
   const [showEnrolledCourses, setShowEnrolledCourses] = React.useState(false);
+  const [isSuccess, setIsSuccess] = React.useState(false);
+  const sheetCloseRef = React.useRef<HTMLButtonElement>(null);
+  const [isSheetOpen, setIsSheetOpen] = React.useState(false);
+
+  const handleCloseSheet = () => {
+    setIsSheetOpen(false);
+  };
+  const resetForm = (data: z.infer<typeof consultingDataSchema>) => {
+    setStudentName(data.student_name);
+    setEmail(data.email ?? '');
+    setPhoneNumber(data.phone_number);
+    setZaloPhone(data.zalo_phone ?? '');
+    setLinkFacebook(data.link_facebook ?? '');
+    setDateOfBirth(
+      data.date_of_birth ? new Date(data.date_of_birth) : undefined
+    );
+    setCurrentEducationLevel(data.current_education_level);
+    setOtherEducationLevelDescription(
+      data.other_education_level_description ?? ''
+    );
+    setHighSchoolName(data.high_school_name ?? '');
+    setCity(data.city);
+    setSource(data.source);
+    setNotificationConsent(data.notification_consent);
+    setCurrentStatus(data.current_status);
+    setStatusChangeDate(
+      data.status_change_date ? new Date(data.status_change_date) : undefined
+    );
+    setRegistrationDate(
+      data.registration_date ? new Date(data.registration_date) : undefined
+    );
+    setAssignedCounselorName(data.assigned_counselor_name);
+    setAssignedCounselorType(data.assigned_counselor_type);
+    setInterestedCoursesDetails(data.interested_courses_details ?? '');
+    setEnrolledCoursesDetails(data.enrolled_courses_details ?? '');
+    setStudentStatusHistoryNotes(data.student_status_history ?? '');
+    setLastConsultationDate(
+      data.last_consultation_date
+        ? new Date(data.last_consultation_date)
+        : undefined
+    );
+    setLastConsultationDurationMinutes(
+      data.last_consultation_duration_minutes ?? ''
+    );
+    setLastConsultationNotes(data.last_consultation_notes ?? '');
+    setLastConsultationType(data.last_consultation_type ?? '');
+    setLastConsultationStatus(data.last_consultation_status ?? '');
+    setLastConsultationCounselorName(
+      data.last_consultation_counselor_name ?? ''
+    );
+  };
+
+  const handleCancel = () => {
+    resetForm(initialData);
+  };
 
   // Helper component for DatePicker
-  const DatePickerField = ({ label, date, setDate, id, readOnly = false }: { label: string, date: Date | undefined, setDate: (d: Date | undefined) => void, id: string, readOnly?: boolean }) => (
-    <div className="flex flex-col gap-3">
-      <Label htmlFor={id}>{label}</Label>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant={"outline"}
-            className={cn(
-              "w-full justify-start text-left font-normal",
-              !date && "text-muted-foreground"
-            )}
-            disabled={readOnly}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {date ? format(date, "yyyy-MM-dd") : <span>Chọn ngày</span>} {/* Format to YYYY-MM-DD */}
-          </Button>
-        </PopoverTrigger>
-        {!readOnly && (
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              initialFocus
-            />
-          </PopoverContent>
-        )}
-      </Popover>
-    </div>
-  );
+  const HybridDatePickerField = ({
+    label,
+    date,
+    setDate,
+    id,
+    readOnly = false,
+  }: {
+    label: string;
+    date: Date | undefined;
+    setDate: (d: Date | undefined) => void;
+    id: string;
+    readOnly?: boolean;
+  }) => {
+    const formatDateForInput = (date: Date | undefined) => {
+      if (!date) return '';
+      return format(date, 'yyyy-MM-dd');
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      console.log(`Date input changed for ${id}:`, value);
+
+      if (value) {
+        try {
+          const newDate = new Date(value);
+          setDate(newDate);
+        } catch (error) {
+          console.error('Error parsing date:', error);
+        }
+      } else {
+        setDate(undefined);
+      }
+    };
+
+    const handleCalendarSelect = (selectedDate: Date | undefined) => {
+      console.log(`Calendar date selected for ${id}:`, selectedDate);
+      setDate(selectedDate);
+    };
+
+    return (
+      <div className="flex flex-col gap-3">
+        <Label htmlFor={id}>{label}</Label>
+        <div className="flex gap-2">
+          {/* Native date input */}
+          <Input
+            id={id}
+            type="date"
+            value={formatDateForInput(date)}
+            onChange={handleInputChange}
+            readOnly={readOnly}
+            className={cn('flex-1', readOnly && 'bg-muted cursor-not-allowed')}
+          />
+
+          {/* Calendar button */}
+          {!readOnly && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0"
+                  type="button"
+                >
+                  <CalendarIcon className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-auto p-0 z-[9999]"
+                style={{ pointerEvents: 'auto' }}
+                align="end"
+                side="top"
+                sideOffset={4}
+              >
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={(selectedDate) => {
+                    console.log('Selected date:', selectedDate); // Thêm dòng này để debug
+                    setDate(selectedDate);
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   // Helper component for expandable text content
-  const ExpandableTextField = ({ label, content, id, show, setShow, onContentChange }: { label: string, content: string | null | undefined, id: string, show: boolean, setShow: (b: boolean) => void, onContentChange?: (value: string) => void }) => (
+  const ExpandableTextField = ({
+    label,
+    content,
+    id,
+    show,
+    setShow,
+    onContentChange,
+    readOnly = false,
+  }: {
+    label: string;
+    content: string | null | undefined;
+    id: string;
+    show: boolean;
+    setShow: (b: boolean) => void;
+    onContentChange?: (value: string) => void;
+    readOnly?: boolean;
+  }) => (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <Label htmlFor={id}>{label}</Label>
@@ -768,23 +1075,34 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
           onClick={() => setShow(!show)}
           type="button"
         >
-          <ChevronDownIcon className={cn("size-4 transition-transform", show ? "rotate-180" : "rotate-0")} />
-          <span className="sr-only">Toggle {label.toLowerCase()} visibility</span>
+          <ChevronDownIcon
+            className={cn(
+              'size-4 transition-transform',
+              show ? 'rotate-180' : 'rotate-0'
+            )}
+          />
+          <span className="sr-only">
+            Toggle {label.toLowerCase()} visibility
+          </span>
         </Button>
       </div>
       {show && (
         <div className="border rounded-md p-3 bg-muted/20">
-          {onContentChange ? (
+          {onContentChange && !readOnly ? (
             <textarea
               id={id}
               className="w-full h-24 p-2 bg-transparent text-sm text-muted-foreground resize-y focus:outline-none"
-              value={content ?? ""}
+              value={content ?? ''}
               onChange={(e) => onContentChange(e.target.value)}
               placeholder={`Nhập ${label.toLowerCase()}...`}
             />
           ) : (
             <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-              {content ? content : <span className="italic">Không có thông tin.</span>}
+              {content ? (
+                content
+              ) : (
+                <span className="italic">Không có thông tin.</span>
+              )}
             </p>
           )}
         </div>
@@ -792,500 +1110,716 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
     </div>
   );
 
+  const getBackendStatus = (status: string): string => {
+    switch (status) {
+      case 'Tiềm năng':
+        return 'Lead';
+      case 'Đang tương tác':
+        return 'Engaging';
+      case 'Đã đăng ký':
+        return 'Registered';
+      case 'Thôi học':
+        return 'Dropped_Out';
+      case 'Lưu trữ':
+        return 'Archived';
+      default:
+        console.error(`Trạng thái không hợp lệ: ${status}`);
+        throw new Error(`Trạng thái không hợp lệ: ${status}`);
+    }
+  };
+
+  const getBackendConsultType = (status: string): string => {
+    switch (status) {
+      case 'Cuộc gọi điện thoại':
+      case 'Phone_Call':
+        return 'Phone_Call';
+      case 'Họp trực tuyến':
+      case 'Online_Meeting':
+        return 'Online_Meeting';
+      case 'Trực tiếp':
+      case 'In_Person':
+        return 'In_Person';
+      case 'Email':
+        return 'Email';
+      case 'Trò chuyện':
+      case 'Chat':
+        return 'Chat';
+      default:
+        console.error(`Trạng thái không hợp lệ: ${status}`);
+        throw new Error(`Trạng thái không hợp lệ: ${status}`);
+    }
+  };
+  const getBackendConsultSession = (status: string): string => {
+    switch (status) {
+      case 'Đã lên lịch':
+      case 'Scheduled':
+        return 'Scheduled';
+      case 'Hoàn thành':
+      case 'Completed':
+        return 'Completed';
+      case 'Đã hủy':
+      case 'Canceled':
+        return 'Canceled';
+      case 'Không tham dự':
+      case 'No_Show':
+        return 'No_Show';
+      default:
+        console.error(`Trạng thái không hợp lệ: ${status}`);
+        throw new Error(`Trạng thái không hợp lệ: ${status}`);
+    }
+  };
+
+  const getBackendNotifi = (status: string): string => {
+    switch (status) {
+      case 'Đồng ý':
+      case 'Agree':
+        return 'Agree';
+      case 'Không đồng ý':
+      case 'Disagree':
+        return 'Disagree';
+      case 'Khác':
+      case 'Other':
+        return 'Other';
+      default:
+        console.error(`Trạng thái không hợp lệ: ${status}`);
+        throw new Error(`Trạng thái không hợp lệ: ${status}`);
+    }
+  };
+
   // Handle form submission
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault(); // Prevent default form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!onUpdate) {
+      console.error('Missing onUpdate function');
+      toast.error('Không thể cập nhật: Thiếu hàm xử lý cập nhật');
+      return;
+    }
 
-    // --- 1. Dữ liệu cho bảng 'Students' ---
-    // Bao gồm các trường trực tiếp thuộc về bảng Students.
-    // 'id' được giữ lại để backend biết bản ghi nào cần cập nhật.
-    const studentDataDraft: Record<string, any> = {
-      id: item.student_id, // ID của sinh viên hiện có
+    if (!item.student_id) {
+      console.error('Missing student ID');
+      toast.error('Không thể cập nhật: Thiếu ID sinh viên');
+      return;
+    }
+
+    // Chuyển đổi các giá trị frontend sang backend trước khi tạo updateData
+    let backendCurrentEducationLevel,
+      backendSource,
+      backendNotificationConsent,
+      backendCurrentStatus,
+      backendLastConsultationType,
+      backendLastConsultationStatus;
+
+    try {
+      backendCurrentEducationLevel = currentEducationLevel;
+      backendSource = source;
+      backendNotificationConsent = notificationConsent
+        ? getBackendNotifi(notificationConsent)
+        : undefined;
+      backendCurrentStatus = currentStatus
+        ? getBackendStatus(currentStatus)
+        : undefined;
+      backendLastConsultationType = lastConsultationType
+        ? getBackendConsultType(lastConsultationType)
+        : undefined;
+      backendLastConsultationStatus = lastConsultationStatus
+        ? getBackendConsultSession(lastConsultationStatus)
+        : undefined;
+    } catch (error: any) {
+      toast.error(error.message);
+      return;
+    }
+
+    // Chuyển đổi các giá trị null thành undefined để phù hợp với kiểu Partial<ConsultingTableRow>
+    const updateData: Partial<ConsultingTableRow> = {
       student_name: studentName,
-      email: email,
+      email: email || undefined,
       phone_number: phoneNumber,
-      zalo_phone: zaloPhone,
-      link_facebook: linkFacebook,
-      date_of_birth: dateOfBirth ? format(dateOfBirth, "yyyy-MM-dd") : null,
-      current_education_level: currentEducationLevel,
-      other_education_level_description: otherEducationLevelDescription,
-      high_school_name: highSchoolName,
+      zalo_phone: zaloPhone || undefined,
+      link_facebook: linkFacebook || undefined,
+      date_of_birth: dateOfBirth
+        ? format(dateOfBirth, 'yyyy-MM-dd')
+        : undefined,
+      current_education_level: backendCurrentEducationLevel,
+      other_education_level_description:
+        otherEducationLevelDescription || undefined,
+      high_school_name: highSchoolName || undefined,
       city: city,
-      source: source,
-      notification_consent: notificationConsent,
-      current_status: currentStatus,
-      assigned_counselor_name: assignedCounselorName, // Tên để backend lookup
-      assigned_counselor_type: assignedCounselorType,
-      status_change_date: statusChangeDate ? format(statusChangeDate, "yyyy-MM-dd HH:mm:ss") : null,
-      registration_date: registrationDate ? format(registrationDate, "yyyy-MM-dd") : null,
-      // student_created_at và student_updated_at thường được quản lý bởi DB, không gửi từ frontend
+      source: backendSource,
+      notification_consent: backendNotificationConsent,
+      current_status: backendCurrentStatus,
+      status_change_date: statusChangeDate
+        ? format(statusChangeDate, 'yyyy-MM-dd')
+        : undefined,
+      registration_date: registrationDate
+        ? format(registrationDate, 'yyyy-MM-dd')
+        : undefined,
+      assigned_counselor_name: assignedCounselorName || undefined,
+      assigned_counselor_type: assignedCounselorType || undefined,
+      interested_courses_details: interestedCoursesDetails || undefined,
+      enrolled_courses_details: enrolledCoursesDetails || undefined,
+      student_status_history: studentStatusHistoryNotes || undefined,
+      last_consultation_date: lastConsultationDate
+        ? format(lastConsultationDate, 'yyyy-MM-dd')
+        : undefined,
+      last_consultation_duration_minutes: lastConsultationDurationMinutes
+        ? Number(lastConsultationDurationMinutes)
+        : undefined,
+      last_consultation_notes: lastConsultationNotes || undefined,
+      last_consultation_type: backendLastConsultationType,
+      last_consultation_status: backendLastConsultationStatus,
+      last_consultation_counselor_name:
+        lastConsultationCounselorName || undefined,
     };
-    const studentData = filterEmptyValues(studentDataDraft);
 
-
-    // --- 2. Dữ liệu cho bảng 'StudentStatusHistory' ---
-    let studentStatusHistoryData: Record<string, any> | null = null;
-    // Chỉ tạo bản ghi lịch sử nếu trạng thái hiện tại thay đổi hoặc có ghi chú lịch sử
-    // Giả sử item.current_status là trạng thái ban đầu của sinh viên từ database
-    // So sánh trạng thái mới với trạng thái ban đầu của item để xác định thay đổi
-    if (currentStatus !== item.current_status || studentStatusHistoryNotes) {
-      const statusHistoryDraft: Record<string, any> = {
-        student_id: item.student_id,
-        old_status: item.current_status, // Trạng thái cũ từ dữ liệu ban đầu
-        new_status: currentStatus,
-        change_date: statusChangeDate ? format(statusChangeDate, "yyyy-MM-dd HH:mm:ss") : format(new Date(), "yyyy-MM-dd HH:mm:ss"),
-        notes: studentStatusHistoryNotes,
-        // changed_by_user_id sẽ được thêm ở backend từ thông tin người dùng đăng nhập
-      };
-      studentStatusHistoryData = filterEmptyValues(statusHistoryDraft);
+    // Xử lý trường hợp thay đổi status
+    if (currentStatus !== item.current_status) {
+      updateData.status_change_date = new Date().toISOString();
     }
 
+    const changedData: Partial<ConsultingTableRow> = {};
 
-    // --- 3. Dữ liệu cho bảng 'ConsultationSessions' ---
-    let consultationSessionData: Record<string, any> | null = null;
-    // Chỉ tạo bản ghi tư vấn nếu có bất kỳ thông tin tư vấn nào được điền
-    if (lastConsultationDate || lastConsultationDurationMinutes || lastConsultationNotes || lastConsultationType || lastConsultationStatus || lastConsultationCounselorName) {
-      const consultationDraft: Record<string, any> = {
-        student_id: item.student_id,
-        session_date: lastConsultationDate ? format(lastConsultationDate, "yyyy-MM-dd") : null,
-        duration_minutes: lastConsultationDurationMinutes === "" ? null : Number(lastConsultationDurationMinutes),
-        notes: lastConsultationNotes,
-        session_type: lastConsultationType,
-        session_status: lastConsultationStatus,
-        counselor_name: lastConsultationCounselorName, // Tên để backend lookup
-      };
-      consultationSessionData = filterEmptyValues(consultationDraft);
-    }
+    for (const key in updateData) {
+      if (Object.prototype.hasOwnProperty.call(updateData, key)) {
+        const typedKey = key as keyof ConsultingTableRow;
+        const value = updateData[typedKey];
 
-
-    // --- 4. Dữ liệu cho bảng 'Student_Interested_Courses' ---
-    let interestedCoursesData: Record<string, any> | null = null;
-    if (interestedCoursesDetails) {
-      const courseNames = interestedCoursesDetails.split(',').map(name => name.trim()).filter(name => name !== '');
-      if (courseNames.length > 0) {
-        interestedCoursesData = {
-          student_id: item.student_id,
-          courses: courseNames, // Backend sẽ xử lý tìm/tạo course_id
-          interest_date: format(new Date(), "yyyy-MM-dd"), // Hoặc một ngày cụ thể từ frontend
-          notes: interestedCoursesDetails // Có thể dùng làm ghi chú chi tiết
-        };
+        if (value !== initialData[typedKey]) {
+          (changedData as any)[typedKey] = value === null ? undefined : value;
+        }
       }
     }
 
+    // Kiểm tra nếu không có gì thay đổi
+    if (Object.keys(changedData).length === 0) {
+      toast.info('Không có thay đổi nào để cập nhật');
+      return;
+    }
 
-    // --- 5. Dữ liệu cho bảng 'StudentEnrollments' ---
-    let enrolledCoursesData: Record<string, any> | null = null;
-    if (enrolledCoursesDetails) {
-      const courseNames = enrolledCoursesDetails.split(',').map(name => name.trim()).filter(name => name !== '');
-      if (courseNames.length > 0) {
-        const enrollmentDraft: Record<string, any> = {
-          student_id: item.student_id,
-          courses: courseNames, // Backend sẽ xử lý tìm/tạo course_id
-          enrollment_date: registrationDate ? format(registrationDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"),
-          // Thêm các trường khác như fee_paid, payment_status, counselor_id, consultation_session_id
-          // nếu bạn có input cho chúng trên frontend. Nếu không, backend sẽ cần logic mặc định.
-          // Ví dụ:
-          // fee_paid: 0, // Cần giá trị thực
-          // payment_status: 'Pending', // Cần giá trị thực
-          // counselor_id: null, // Cần ID thực
-          // consultation_session_id: null, // Cần ID thực
-          notes: enrolledCoursesDetails // Có thể dùng làm ghi chú
-        };
-        enrolledCoursesData = filterEmptyValues(enrollmentDraft);
+    try {
+      await onUpdate(item.student_id, changedData);
+      if (sheetCloseRef.current) {
+        sheetCloseRef.current.click();
       }
-    }
+      setIsSuccess(true);
 
-    // Gom tất cả các đối tượng dữ liệu đã lọc vào một payload duy nhất
-    const finalDataPacket: Record<string, any> = {};
-
-    // Chỉ thêm vào finalDataPacket nếu đối tượng con có dữ liệu
-    // Đối với `student`, nếu là student_id mới (chưa có item.student_id) HOẶC có sự thay đổi
-    // (kiểm tra Object.keys(studentData).length > 1 vì 'id' luôn có)
-    if (Object.keys(studentData).length > 1 || !item.student_id) {
-      finalDataPacket.student = studentData;
+      setTimeout(() => setIsSuccess(false), 3000);
+    } catch (error) {
+      console.error('Lỗi khi cập nhật:', error);
     }
-    if (studentStatusHistoryData && Object.keys(studentStatusHistoryData).length > 0) {
-      finalDataPacket.studentStatusHistory = studentStatusHistoryData;
-    }
-    if (consultationSessionData && Object.keys(consultationSessionData).length > 0) {
-      finalDataPacket.consultationSession = consultationSessionData;
-    }
-    if (interestedCoursesData && Object.keys(interestedCoursesData).length > 0) {
-      finalDataPacket.interestedCourses = interestedCoursesData;
-    }
-    if (enrolledCoursesData && Object.keys(enrolledCoursesData).length > 0) {
-      finalDataPacket.enrolledCourses = enrolledCoursesData;
-    }
-
-
-    console.log("Dữ liệu đã được phân tách và sẵn sàng gửi về backend:");
-    console.log(finalDataPacket);
-    toast.success("Đã chuẩn bị dữ liệu. Kiểm tra console.log!");
-
-    // Sau khi console.log và xác nhận dữ liệu, bạn có thể uncomment phần fetch API để gửi dữ liệu đi.
-    // Dưới đây là ví dụ cách gửi toàn bộ packet đến một endpoint xử lý chung:
-    /*
-    fetch('/api/update-student-profile', { // Thay thế bằng endpoint API thực tế của bạn
-      method: 'POST', // Hoặc 'PUT' nếu API của bạn tuân theo RESTful cho cập nhật
-      headers: {
-        'Content-Type': 'application/json',
-        // 'Authorization': `Bearer ${yourAuthToken}`, // Thêm token xác thực nếu có
-      },
-      body: JSON.stringify(finalDataPacket),
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then(data => {
-      console.log('Success:', data);
-      toast.success("Cập nhật thành công!");
-      // Bạn có thể cập nhật UI hoặc đóng sheet ở đây
-      // Ví dụ: table.options.meta?.refetchData();
-    })
-    .catch((error) => {
-      console.error('Error:', error);
-      toast.error(`Cập nhật thất bại: ${error.message}`);
-    });
-    */
   };
 
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="link" className="w-fit px-0 text-left text-foreground">
-          {item.student_name}
-        </Button>
-      </SheetTrigger>
+    <>
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetTrigger asChild>
+          <Button
+            variant="link"
+            className="w-fit px-0 text-left text-foreground"
+            onClick={() => setIsSheetOpen(true)}
+          >
+            {item.student_name}
+          </Button>
+        </SheetTrigger>
 
-      <SheetContent side="right" className="flex flex-col w-[1200px] sm:max-w-xl md:max-w-2xl lg:max-w-4xl xl:max-w-5xl"> {/* Adjust width based on screen size */}
-        <SheetHeader className="gap-1">
-          <SheetTitle>{item.student_name}</SheetTitle>
-          <SheetDescription>
-            Thông tin chi tiết về sinh viên này.
-          </SheetDescription>
-        </SheetHeader>
-        <div className="flex flex-1 flex-col gap-4 overflow-y-auto py-4 text-sm">
-          {!isMobile && (
-            <>
-              <ChartContainer config={chartConfig}>
-                <AreaChart
-                  accessibilityLayer
-                  data={chartData}
-                  margin={{
-                    left: 0,
-                    right: 10,
-                  }}
+        <SheetContent
+          side="right"
+          // Đảm bảo SheetContent có chiều rộng phù hợp và có thể cuộn
+          className="flex flex-col w-[1200px] sm:max-w-xl md:max-w-2xl lg:max-w-4xl xl:max-w-5xl overflow-y-auto" // THÊM overflow-y-auto VÀO ĐÂY
+        >
+          <SheetHeader className="gap-1">
+            <SheetTitle>{item.student_name}</SheetTitle>
+            <SheetDescription>
+              Thông tin chi tiết về sinh viên này.
+            </SheetDescription>
+          </SheetHeader>
+
+          {/* Đổi div này để nó không tự cuộn nữa, vì SheetContent đã cuộn */}
+          <div className="flex flex-col gap-4 py-4 text-sm">
+            {' '}
+            {/* BỎ overflow-y-auto Ở ĐÂY */}
+            {!isMobile && (
+              <>
+                {/* ChartContainer và các thành phần khác */}
+                <ChartContainer config={chartConfig}>
+                  <AreaChart
+                    accessibilityLayer
+                    data={chartData}
+                    margin={{
+                      left: 0,
+                      right: 10,
+                    }}
+                  >
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                      dataKey="month"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      tickFormatter={(value) => value.slice(0, 3)}
+                      hide
+                    />
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent indicator="dot" />}
+                    />
+                    <Area
+                      dataKey="visitors"
+                      type="natural"
+                      fill="var(--color-visitors)"
+                      fillOpacity={0.4}
+                      stroke="var(--color-visitors)"
+                      stackId="a"
+                    />
+                  </AreaChart>
+                </ChartContainer>
+                <Separator />
+                <div className="grid gap-2 px-4">
+                  <div className="flex gap-2 font-medium leading-none">
+                    Trạng thái hiện tại: {currentStatus}{' '}
+                    {currentStatus === 'Đã đăng ký' ? (
+                      <CheckCircle2Icon className="size-4 text-green-500 dark:text-green-400" />
+                    ) : currentStatus === 'Thôi học' ? (
+                      <XCircleIcon className="size-4 text-red-500 dark:text-red-400" />
+                    ) : currentStatus === 'Đang tương tác' ? (
+                      <MessageSquareIcon className="size-4 text-yellow-500 dark:text-yellow-400" />
+                    ) : currentStatus === 'Lưu trữ' ? (
+                      <ArchiveIcon className="size-4 text-gray-500 dark:text-gray-400" />
+                    ) : (
+                      <LoaderIcon className="size-4" />
+                    )}
+                  </div>
+                  <div className="text-muted-foreground">
+                    Đây là một đoạn văn bản mô tả chung về sinh viên và trạng
+                    thái của họ.
+                  </div>
+                </div>
+                <Separator />
+              </>
+            )}
+            {/* Form của bạn */}
+            <form className="flex flex-col gap-4 px-4" onSubmit={handleSubmit}>
+              {/* Mã Sinh Viên - READ ONLY */}
+              <div className="flex flex-col gap-3">
+                <Label htmlFor="student_id">Mã Sinh Viên</Label>
+                <Input
+                  id="student_id"
+                  value={item.student_id}
+                  readOnly
+                  className="bg-muted cursor-not-allowed"
+                />
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <Label htmlFor="student_name">Tên Sinh Viên</Label>
+                <Input
+                  id="student_name"
+                  value={studentName}
+                  onChange={(e) => setStudentName(e.target.value)}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-3">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-3">
+                  <Label htmlFor="phone_number">Số Điện Thoại</Label>
+                  <Input
+                    id="phone_number"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-3">
+                  <Label htmlFor="zalo_phone">Số Zalo</Label>
+                  <Input
+                    id="zalo_phone"
+                    value={zaloPhone}
+                    onChange={(e) => setZaloPhone(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-3">
+                  <Label htmlFor="link_facebook">Link Facebook</Label>
+                  <Input
+                    id="link_facebook"
+                    value={linkFacebook}
+                    onChange={(e) => setLinkFacebook(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Date of Birth */}
+              <HybridDatePickerField
+                label="Ngày Sinh"
+                id="date_of_birth"
+                date={dateOfBirth}
+                setDate={setDateOfBirth}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-3">
+                  <Label htmlFor="current_education_level">
+                    Trình Độ Học Vấn
+                  </Label>
+                  <Select
+                    value={currentEducationLevel || ''}
+                    onValueChange={setCurrentEducationLevel}
+                  >
+                    <SelectTrigger
+                      id="current_education_level"
+                      className="w-full"
+                    >
+                      <SelectValue placeholder="Chọn trình độ" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="THPT">THPT</SelectItem>
+                      <SelectItem value="Sinh viên">Sinh viên</SelectItem>
+                      <SelectItem value="Khác">Khác</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <Label htmlFor="other_education_level_description">
+                  Mô Tả Trình Độ Học Vấn Khác
+                </Label>
+                <Input
+                  id="other_education_level_description"
+                  value={otherEducationLevelDescription}
+                  onChange={(e) =>
+                    setOtherEducationLevelDescription(e.target.value)
+                  }
+                />
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <Label htmlFor="high_school_name">Tên Trường Cấp 3</Label>
+                <Input
+                  id="high_school_name"
+                  value={highSchoolName}
+                  onChange={(e) => setHighSchoolName(e.target.value)}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-3">
+                  <Label htmlFor="city">Thành Phố</Label>
+                  <Input
+                    id="city"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-3">
+                  <Label htmlFor="source">Nguồn</Label>
+                  <Select value={source} onValueChange={setSource}>
+                    <SelectTrigger id="source" className="w-full">
+                      <SelectValue placeholder="Chọn nguồn" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Mail">Mail</SelectItem>
+                      <SelectItem value="Fanpage">Fanpage</SelectItem>
+                      <SelectItem value="Zalo">Zalo</SelectItem>
+                      <SelectItem value="Website">Website</SelectItem>
+                      <SelectItem value="Friend">Bạn bè</SelectItem>
+                      <SelectItem value="SMS">SMS</SelectItem>
+                      <SelectItem value="Banderole">Banderole</SelectItem>
+                      <SelectItem value="Poster">Poster</SelectItem>
+                      <SelectItem value="Brochure">Brochure</SelectItem>
+                      <SelectItem value="Google">Google</SelectItem>
+                      <SelectItem value="Brand">Thương hiệu</SelectItem>
+                      <SelectItem value="Event">Sự kiện</SelectItem>
+                      <SelectItem value="Other">Khác</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <Label htmlFor="notification_consent">
+                  Đồng Ý Nhận Thông Báo
+                </Label>
+                <Select
+                  value={notificationConsent}
+                  onValueChange={setNotificationConsent}
                 >
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey="month"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    tickFormatter={(value) => value.slice(0, 3)}
-                    hide
-                  />
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent indicator="dot" />}
-                  />
-                  <Area
-                    dataKey="visitors"
-                    type="natural"
-                    fill="var(--color-visitors)"
-                    fillOpacity={0.4}
-                    stroke="var(--color-visitors)"
-                    stackId="a"
-                  />
-                </AreaChart>
-              </ChartContainer>
-              <Separator />
-              <div className="grid gap-2 px-4">
-                <div className="flex gap-2 font-medium leading-none">
-                  Trạng thái hiện tại: {item.current_status}
-                  {item.current_status === "Engaging" ? (
-                    <CheckCircle2Icon className="size-4 text-green-500 dark:text-green-400" />
-                  ) : (
-                    <LoaderIcon />
-                  )}
+                  <SelectTrigger id="notification_consent" className="w-full">
+                    <SelectValue placeholder="Đồng ý/Không đồng ý" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Đồng ý">Đồng ý</SelectItem>
+                    <SelectItem value="Không đồng ý">Không đồng ý</SelectItem>
+                    <SelectItem value="Khác">Khác</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* TRẠNG THÁI HIỆN TẠI - CÓ THỂ CHỈNH SỬA */}
+                <div className="flex flex-col gap-3">
+                  <Label htmlFor="current_status">Trạng Thái Hiện Tại</Label>
+                  <Select
+                    value={currentStatus}
+                    onValueChange={setCurrentStatus}
+                  >
+                    <SelectTrigger id="current_status" className="w-full">
+                      <SelectValue placeholder="Chọn trạng thái" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {/* ĐỊNH NGHĨA CÁC GIÁ TRỊ TRẠNG THÁI */}
+                      <SelectItem value="Tiềm năng">Tiềm năng</SelectItem>
+                      <SelectItem value="Đang tương tác">
+                        Đang tương tác
+                      </SelectItem>
+                      <SelectItem value="Đã đăng ký">Đã đăng ký</SelectItem>
+                      <SelectItem value="Thôi học">Đã ngừng</SelectItem>
+                      <SelectItem value="Đã lưu trữ">Đã lưu trữ</SelectItem>
+                      {/* Thêm các trạng thái khác nếu cần */}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="text-muted-foreground">
-                  Đây là một đoạn văn bản mô tả chung về sinh viên và trạng thái của họ.
-                </div>
-              </div>
-              <Separator />
-            </>
-          )}
-          <form className="flex flex-col gap-4 px-4" onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="student_id">Mã Sinh Viên</Label>
-              <Input id="student_id" value={item.student_id} readOnly /> {/* Readonly, not part of mutable state */}
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="student_name">Tên Sinh Viên</Label>
-              <Input id="student_name" value={studentName} onChange={(e) => setStudentName(e.target.value)} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="phone_number">Số Điện Thoại</Label>
-                <Input id="phone_number" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="zalo_phone">Số Zalo</Label>
-                <Input id="zalo_phone" value={zaloPhone} onChange={(e) => setZaloPhone(e.target.value)} />
-              </div>
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="link_facebook">Link Facebook</Label>
-                <Input id="link_facebook" value={linkFacebook} onChange={(e) => setLinkFacebook(e.target.value)} />
-              </div>
-            </div>
 
-            {/* Date of Birth */}
-            <DatePickerField
-              label="Ngày Sinh"
-              id="date_of_birth"
-              date={dateOfBirth}
-              setDate={setDateOfBirth}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="current_education_level">Trình Độ Học Vấn</Label>
-                <Select value={currentEducationLevel} onValueChange={setCurrentEducationLevel}>
-                  <SelectTrigger id="current_education_level" className="w-full">
-                    <SelectValue placeholder="Chọn trình độ" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="THPT">THPT</SelectItem>
-                    <SelectItem value="SinhVien">Sinh Viên</SelectItem>
-                    <SelectItem value="Other">Khác</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="other_education_level_description">Mô Tả Trình Độ Học Vấn Khác</Label>
-              <Input id="other_education_level_description" value={otherEducationLevelDescription} onChange={(e) => setOtherEducationLevelDescription(e.target.value)} />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="high_school_name">Tên Trường Cấp 3</Label>
-              <Input id="high_school_name" value={highSchoolName} onChange={(e) => setHighSchoolName(e.target.value)} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="city">Thành Phố</Label>
-                <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} />
-              </div>
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="source">Nguồn</Label>
-                <Select value={source} onValueChange={setSource}>
-                  <SelectTrigger id="source" className="w-full">
-                    <SelectValue placeholder="Chọn nguồn" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Mail">Mail</SelectItem>
-                    <SelectItem value="Fanpage">Fanpage</SelectItem>
-                    <SelectItem value="Zalo">Zalo</SelectItem>
-                    <SelectItem value="Website">Website</SelectItem>
-                    <SelectItem value="Friend">Bạn bè</SelectItem>
-                    <SelectItem value="SMS">SMS</SelectItem>
-                    <SelectItem value="Banderole">Banderole</SelectItem>
-                    <SelectItem value="Poster">Poster</SelectItem>
-                    <SelectItem value="Brochure">Brochure</SelectItem>
-                    <SelectItem value="Google">Google</SelectItem>
-                    <SelectItem value="Brand">Thương hiệu</SelectItem>
-                    <SelectItem value="Event">Sự kiện</SelectItem>
-                    <SelectItem value="Other">Khác</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="notification_consent">Đồng Ý Nhận Thông Báo</Label>
-              <Select value={notificationConsent} onValueChange={setNotificationConsent}>
-                <SelectTrigger id="notification_consent" className="w-full">
-                  <SelectValue placeholder="Đồng ý/Không đồng ý" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Agree">Đồng ý</SelectItem>
-                  <SelectItem value="Disagree">Không đồng ý</SelectItem>
-                  <SelectItem value="Other">Khác</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="current_status">Trạng Thái Hiện Tại</Label>
-                <Select value={currentStatus} onValueChange={setCurrentStatus}>
-                  <SelectTrigger id="current_status" className="w-full">
-                    <SelectValue placeholder="Chọn trạng thái" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Lead">Lead</SelectItem>
-                    <SelectItem value="Engaging">Engaging</SelectItem>
-                    <SelectItem value="Registered">Đã đăng ký</SelectItem>
-                    <SelectItem value="Dropped Out">Bỏ học</SelectItem>
-                    <SelectItem value="Archived">Lưu trữ</SelectItem>
-                  </SelectContent>
-                </Select>
+                {/* Ngày Thay Đổi Trạng Thái - READ ONLY */}
+                <HybridDatePickerField
+                  label="Ngày Thay Đổi Trạng Thái"
+                  id="status_change_date"
+                  date={statusChangeDate}
+                  setDate={setStatusChangeDate}
+                  readOnly={true} // Vẫn giữ là Readonly
+                />
               </div>
 
-              {/* Status Change Date */}
-              <DatePickerField
-                label="Ngày Thay Đổi Trạng Thái"
-                id="status_change_date"
-                date={statusChangeDate}
-                setDate={setStatusChangeDate}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              {/* Registration Date */}
-              <DatePickerField
-                label="Ngày Đăng Ký"
-                id="registration_date"
-                date={registrationDate}
-                setDate={setRegistrationDate}
-              />
+              <div className="grid grid-cols-2 gap-4">
+                {/* Registration Date */}
+                <HybridDatePickerField
+                  label="Ngày Đăng Ký"
+                  id="registration_date"
+                  date={registrationDate}
+                  setDate={setRegistrationDate}
+                />
 
-              {/* Student Created At */}
-              <DatePickerField
-                label="Ngày Tạo Sinh Viên"
-                id="student_created_at"
-                date={item.student_created_at ? new Date(item.student_created_at) : undefined}
+                {/* Student Created At */}
+                <HybridDatePickerField
+                  label="Ngày Tạo Sinh Viên"
+                  id="student_created_at"
+                  date={
+                    item.student_created_at
+                      ? new Date(item.student_created_at)
+                      : undefined
+                  }
+                  setDate={() => {}} // Readonly
+                  readOnly={true}
+                />
+              </div>
+
+              {/* Student Updated At */}
+              <HybridDatePickerField
+                label="Ngày Cập Nhật Sinh Viên"
+                id="student_updated_at"
+                date={
+                  item.student_updated_at
+                    ? new Date(item.student_updated_at)
+                    : undefined
+                }
                 setDate={() => {}} // Readonly
                 readOnly={true}
               />
-            </div>
-            {/* Student Updated At */}
-            <DatePickerField
-              label="Ngày Cập Nhật Sinh Viên"
-              id="student_updated_at"
-              date={item.student_updated_at ? new Date(item.student_updated_at) : undefined}
-              setDate={() => {}} // Readonly
-              readOnly={true}
-            />
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="assigned_counselor_name">Tên Người Tư Vấn Được Gán</Label>
-                <Select value={assignedCounselorName} onValueChange={setAssignedCounselorName}>
-                  <SelectTrigger id="assigned_counselor_name" className="w-full">
-                    <SelectValue placeholder="Chọn người tư vấn" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Trần Thị B">Trần Thị B</SelectItem>
-                    <SelectItem value="Lê Văn C">Lê Văn C</SelectItem>
-                    <SelectItem value="Phạm Thu D">Phạm Thu D</SelectItem>
-                    {/* Add more counselors dynamically from your Users table if available */}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-4">
+                {/* Tên Người Tư Vấn Được Gán - READ ONLY */}
+                <div className="flex flex-col gap-3">
+                  <Label htmlFor="assigned_counselor_name">
+                    Tên Người Tư Vấn Được Gán
+                  </Label>
+                  <Input
+                    id="assigned_counselor_name"
+                    value={assignedCounselorName}
+                    readOnly
+                    className="bg-muted cursor-not-allowed"
+                  />
+                </div>
+
+                {/* Loại Người Tư Vấn Được Gán - READ ONLY */}
+                <div className="flex flex-col gap-3">
+                  <Label htmlFor="assigned_counselor_type">
+                    Loại Người Tư Vấn Được Gán
+                  </Label>
+                  <Input
+                    id="assigned_counselor_type"
+                    value={assignedCounselorType}
+                    readOnly
+                    className="bg-muted cursor-not-allowed"
+                  />
+                </div>
               </div>
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="assigned_counselor_type">Loại Người Tư Vấn Được Gán</Label>
-                <Input id="assigned_counselor_type" value={assignedCounselorType} onChange={(e) => setAssignedCounselorType(e.target.value)} />
-              </div>
-            </div>
 
-            {/* Expandable interested_courses_details */}
-            <ExpandableTextField
-              label="Chi Tiết Khóa Học Quan Tâm"
-              id="interested_courses_details"
-              content={interestedCoursesDetails}
-              show={showInterestedCourses}
-              setShow={setShowInterestedCourses}
-              onContentChange={setInterestedCoursesDetails}
-            />
-
-            {/* Expandable enrolled_courses_details */}
-            <ExpandableTextField
-              label="Chi Tiết Khóa Học Đã Đăng Ký"
-              id="enrolled_courses_details"
-              content={enrolledCoursesDetails}
-              show={showEnrolledCourses}
-              setShow={setShowEnrolledCourses}
-              onContentChange={setEnrolledCoursesDetails}
-            />
-
-            {/* Lịch sử trạng thái sinh viên */}
-            <ExpandableTextField
-              label="Ghi chú Lịch Sử Trạng Thái Sinh Viên"
-              id="student_status_history"
-              content={studentStatusHistoryNotes}
-              show={showStatusHistory}
-              setShow={setShowStatusHistory}
-              onContentChange={setStudentStatusHistoryNotes} // This will allow editing history notes
-            />
-
-            {/* Last Consultation Date */}
-            <DatePickerField
-              label="Ngày Tư Vấn Cuối Cùng"
-              id="last_consultation_date"
-              date={lastConsultationDate}
-              setDate={setLastConsultationDate}
-            />
-
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="last_consultation_duration_minutes">Thời Lượng Tư Vấn Cuối Cùng (phút)</Label>
-              <Input
-                id="last_consultation_duration_minutes"
-                value={lastConsultationDurationMinutes}
-                onChange={(e) => setLastConsultationDurationMinutes(e.target.value)}
-                type="number"
+              {/* Chi Tiết Khóa Học Quan Tâm - READ ONLY */}
+              <ExpandableTextField
+                label="Chi Tiết Khóa Học Quan Tâm"
+                id="interested_courses_details"
+                content={interestedCoursesDetails}
+                show={showInterestedCourses}
+                setShow={setShowInterestedCourses}
+                readOnly={true}
               />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="last_consultation_notes">Ghi Chú Tư Vấn Cuối Cùng</Label>
-              <Input id="last_consultation_notes" value={lastConsultationNotes} onChange={(e) => setLastConsultationNotes(e.target.value)} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+
+              {/* Chi Tiết Khóa Học Đã Đăng Ký - READ ONLY */}
+              <ExpandableTextField
+                label="Chi Tiết Khóa Học Đã Đăng Ký"
+                id="enrolled_courses_details"
+                content={enrolledCoursesDetails}
+                show={showEnrolledCourses}
+                setShow={setShowEnrolledCourses}
+                readOnly={true}
+              />
+
+              {/* Lịch sử trạng thái sinh viên - EDITABLE */}
+              <ExpandableTextField
+                label="Ghi chú Lịch Sử Trạng Thái Sinh Viên"
+                id="student_status_history"
+                content={studentStatusHistoryNotes}
+                show={showStatusHistory}
+                setShow={setShowStatusHistory}
+                onContentChange={setStudentStatusHistoryNotes}
+              />
+
+              {/* Last Consultation Date */}
+              <HybridDatePickerField
+                label="Ngày Tư Vấn Cuối Cùng"
+                id="last_consultation_date"
+                date={lastConsultationDate}
+                setDate={setLastConsultationDate}
+              />
+
               <div className="flex flex-col gap-3">
-                <Label htmlFor="last_consultation_type">Loại Tư Vấn Cuối Cùng</Label>
-                <Input id="last_consultation_type" value={lastConsultationType} onChange={(e) => setLastConsultationType(e.target.value)} />
+                <Label htmlFor="last_consultation_duration_minutes">
+                  Thời Lượng Tư Vấn Cuối Cùng (phút)
+                </Label>
+                <Input
+                  id="last_consultation_duration_minutes"
+                  value={lastConsultationDurationMinutes}
+                  onChange={(e) =>
+                    setLastConsultationDurationMinutes(e.target.value)
+                  }
+                  type="number"
+                />
               </div>
-              {/* Trạng thái Tư Vấn Cuối Cùng - Select */}
+
               <div className="flex flex-col gap-3">
-                <Label htmlFor="last_consultation_status">Trạng Thái Tư Vấn Cuối Cùng</Label>
-                <Select
-                  value={lastConsultationStatus}
-                  onValueChange={setLastConsultationStatus}
-                >
-                  <SelectTrigger id="last_consultation_status" className="w-full">
-                    <SelectValue placeholder="Chọn trạng thái tư vấn" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Scheduled">Đã lên lịch</SelectItem>
-                    <SelectItem value="Completed">Hoàn thành</SelectItem>
-                    <SelectItem value="Canceled">Đã hủy</SelectItem>
-                    <SelectItem value="No Show">Không có mặt</SelectItem>
-                    {/* Add more consultation statuses if needed */}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="last_consultation_notes">
+                  Ghi Chú Tư Vấn Cuối Cùng
+                </Label>
+                <Input
+                  id="last_consultation_notes"
+                  value={lastConsultationNotes}
+                  onChange={(e) => setLastConsultationNotes(e.target.value)}
+                />
               </div>
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="last_consultation_counselor_name">Tên Người Tư Vấn Cuối Cùng</Label>
-              <Input id="last_consultation_counselor_name" value={lastConsultationCounselorName} onChange={(e) => setLastConsultationCounselorName(e.target.value)} />
-            </div>
-            <SheetFooter className="mt-auto flex gap-2 sm:flex-col sm:space-x-0">
-              <Button type="submit" className="w-full">Lưu Thay Đổi</Button> {/* Type submit */}
-              <SheetClose asChild>
-                <Button type="button" variant="outline" className="w-full"> {/* Type button to prevent submission */}
-                  Hoàn Tất
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-3">
+                  <Label htmlFor="last_consultation_type">
+                    Loại Tư Vấn Cuối Cùng
+                  </Label>
+                  <Select
+                    value={lastConsultationType}
+                    onValueChange={setLastConsultationType}
+                  >
+                    <SelectTrigger
+                      id="last_consultation_type"
+                      className="w-full"
+                    >
+                      <SelectValue placeholder="Chọn loại tư vấn" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Phone_Call">
+                        Cuộc gọi điện thoại
+                      </SelectItem>
+                      <SelectItem value="Online_Meeting">
+                        Họp trực tuyến
+                      </SelectItem>
+                      <SelectItem value="In_Person">Trực tiếp</SelectItem>
+                      <SelectItem value="Email">Email</SelectItem>
+                      <SelectItem value="Chat">Trò chuyện</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Trạng thái Tư Vấn Cuối Cùng - Select */}
+                <div className="flex flex-col gap-3">
+                  <Label htmlFor="last_consultation_status">
+                    Trạng Thái Tư Vấn Cuối Cùng
+                  </Label>
+                  <Select
+                    value={lastConsultationStatus}
+                    onValueChange={setLastConsultationStatus}
+                  >
+                    <SelectTrigger
+                      id="last_consultation_status"
+                      className="w-full"
+                    >
+                      <SelectValue placeholder="Chọn trạng thái tư vấn" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Scheduled">Đã lên lịch</SelectItem>
+                      <SelectItem value="Completed">Hoàn thành</SelectItem>
+                      <SelectItem value="Canceled">Đã hủy</SelectItem>
+                      <SelectItem value="No Show">Không có mặt</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Tên Người Tư Vấn Cuối Cùng - READ ONLY */}
+              <div className="flex flex-col gap-3">
+                <Label htmlFor="last_consultation_counselor_name">
+                  Tên Người Tư Vấn Cuối Cùng
+                </Label>
+                <Input
+                  id="last_consultation_counselor_name"
+                  value={lastConsultationCounselorName}
+                  readOnly
+                  className="bg-muted cursor-not-allowed"
+                />
+              </div>
+
+              <SheetFooter className="mt-auto flex gap-2 sm:flex-col sm:space-x-0">
+                <Button type="submit" className="w-full">
+                  Lưu Thay Đổi
                 </Button>
-              </SheetClose>
-            </SheetFooter>
-          </form>
-        </div>
-      </SheetContent>
-    </Sheet>
-  )
+                <SheetClose asChild ref={sheetCloseRef}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleCancel}
+                  >
+                    Hủy
+                  </Button>
+                </SheetClose>
+              </SheetFooter>
+            </form>
+          </div>
+        </SheetContent>
+      </Sheet>
+      {isSuccess && (
+        <Alert className="fixed top-4 right-4 w-[350px]">
+          <CheckCircle2Icon className="h-4 w-4 text-green-500" />
+          <AlertTitle>Thành công!</AlertTitle>
+          <AlertDescription>
+            Thay đổi của bạn đã được lưu thành công.
+          </AlertDescription>
+        </Alert>
+      )}
+    </>
+  );
 }

@@ -1,26 +1,47 @@
 // components/ui/search.tsx
-"use client"
-
-import { Input } from "@/components/ui/input"
+import { Input } from '@/components/ui/input';
 import { useState, useEffect } from 'react';
 import useDebounce from '@/hooks/debounce';
 
-// Khai báo interface cho props của Search component
 interface SearchProps {
   onSearch: (searchTerm: string) => void;
+  initialSearchTerm?: string;
 }
 
-export default function Search({ onSearch }: SearchProps) {
-  const [searchTerm, setSearchTerm] = useState('');
+export default function Search({
+  onSearch,
+  initialSearchTerm = '',
+}: SearchProps) {
+  const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-
+  // Debug: Kiểm tra giá trị từ props và đồng bộ hóa
   useEffect(() => {
+    console.log(
+      'Search.tsx: initialSearchTerm prop received:',
+      initialSearchTerm
+    );
+    if (initialSearchTerm !== searchTerm) {
+      console.log(
+        'Search.tsx: Updating internal searchTerm to match initialSearchTerm:',
+        initialSearchTerm
+      );
+      setSearchTerm(initialSearchTerm);
+    }
+  }, [initialSearchTerm]);
+
+  // Debug: Kiểm tra khi debouncedSearchTerm thay đổi và onSearch được gọi
+  useEffect(() => {
+    console.log('Search.tsx: Debounced search term:', debouncedSearchTerm);
     onSearch(debouncedSearchTerm);
   }, [debouncedSearchTerm, onSearch]);
 
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => { // Thêm kiểu cho event
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
+    console.log(
+      'Search.tsx: Input changed, new internal searchTerm:',
+      event.target.value
+    );
   };
 
   return (
@@ -43,9 +64,9 @@ export default function Search({ onSearch }: SearchProps) {
         type="text"
         placeholder="Tìm kiếm theo họ tên..."
         className="pl-12 pr-4"
-        value={searchTerm}
+        value={searchTerm} // Giá trị của input được quản lý bởi state nội bộ `searchTerm`
         onChange={handleInputChange}
       />
     </div>
-  )
+  );
 }

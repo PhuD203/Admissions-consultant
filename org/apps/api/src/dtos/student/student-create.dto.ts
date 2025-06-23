@@ -1,3 +1,5 @@
+// apps\api\src\dtos\consulting-information-management\consulting-information-management-create.dto.ts
+
 import { IsString, IsEmail, IsNotEmpty, IsOptional, IsDateString, IsEnum, IsInt, Matches, Length } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -47,6 +49,11 @@ export class StudentCreateDTO {
   @Matches(/^\d{10,20}$/, { message: 'Số điện thoại không hợp lệ (chỉ chấp nhận chữ số và dài từ 10 đến 20 ký tự).' })
   public phone_number!: string;
 
+  @IsNotEmpty({ message: 'Giới tính không được để trống.' }) // Thêm trường gender
+  @IsString({ message: 'Giới tính phải là chuỗi.' })
+  @Length(1, 20, { message: 'Giới tính phải từ 1 đến 20 ký tự.' })
+  public gender!: string; // Đảm bảo khớp với DB: non-nullable string
+
   @IsOptional()
   @IsString({ message: 'Số điện thoại Zalo phải là chuỗi.' })
   @Matches(/^\d{10,20}$/, { message: 'Số điện thoại Zalo không hợp lệ (chỉ chấp nhận chữ số và dài từ 10 đến 20 ký tự).' })
@@ -93,20 +100,22 @@ export class StudentCreateDTO {
   @IsEnum(NotificationConsent, { message: 'Đồng ý nhận thông báo không hợp lệ.' })
   public notification_consent!: NotificationConsent;
 
-
+  @IsOptional()
+  @IsString()
+  other_notification_consent_description?: string | null;
 
   @IsOptional()
   @IsInt({ message: 'ID tư vấn viên phải là số nguyên.' })
   @Type(() => Number)
   public assigned_counselor_id?: number | null;
 
-
   @IsOptional()
   @IsDateString({}, { message: 'Ngày đăng ký không hợp lệ (định dạng YYYY-MM-DD).' })
   public registration_date?: string | null;
 
-  @IsOptional()
-  @IsString({ message: 'Lĩnh vực khóa học dự định phải là chuỗi.' })
-  @Length(0, 255, { message: 'Lĩnh vực khóa học dự định không được quá 255 ký tự.' })
-  public intended_course_area?: string | null;
+  @IsNotEmpty({ message: 'Chi tiết khóa học quan tâm không được để trống.' }) // Thêm trường này
+  @IsString({ message: 'Chi tiết khóa học quan tâm phải là chuỗi.' })
+  public interested_courses_details!: string; // Đảm bảo khớp với dữ liệu form
+
+  // public intended_course_area?: string | null; // Đã loại bỏ vì không có trong DB model 'students'
 }
