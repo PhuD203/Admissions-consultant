@@ -1,11 +1,10 @@
 generator client {
   provider = "prisma-client-js"
-  // output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "mysql"
-  url      = "mysql://root:@localhost:3306/cusc_data"
+  url      = env("DATABASE_URL")
 }
 
 model users {
@@ -22,14 +21,14 @@ model users {
   refresh_token_expire                                                DateTime?              @db.DateTime(0)
   created_at                                                          DateTime?              @default(now()) @db.DateTime(0)
   updated_at                                                          DateTime?              @default(now()) @db.DateTime(0)
+  program_type                                                        users_program_type?    @default(Short_term___Steam)
   consultationsessions                                                consultationsessions[]
   counselorkpi_targets_counselorkpi_targets_counselor_idTousers       counselorkpi_targets[] @relation("counselorkpi_targets_counselor_idTousers")
   counselorkpi_targets_counselorkpi_targets_created_by_user_idTousers counselorkpi_targets[] @relation("counselorkpi_targets_created_by_user_idTousers")
   studentenrollments                                                  studentenrollments[]
   students                                                            students[]
   studentstatushistory                                                studentstatushistory[]
-
-  userspecializations userspecializations[] @relation(map: "userspecializations_ibfk_1")
+  userspecializations                                                 userspecializations[]
 }
 
 model consultationsessions {
@@ -47,8 +46,8 @@ model consultationsessions {
   students           students                            @relation(fields: [student_id], references: [id], onUpdate: Restrict, map: "consultationsessions_ibfk_2")
   studentenrollments studentenrollments[]
 
-  @@index([counselor_id], map: "counselor_id")
-  @@index([student_id], map: "student_id")
+  @@index([counselor_id], map: "consultationsessions_ibfk_1")
+  @@index([student_id], map: "consultationsessions_ibfk_2")
 }
 
 model counselorkpi_targets {
@@ -66,8 +65,8 @@ model counselorkpi_targets {
   users_counselorkpi_targets_created_by_user_idTousers users           @relation("counselorkpi_targets_created_by_user_idTousers", fields: [created_by_user_id], references: [id], onUpdate: Restrict, map: "counselorkpi_targets_ibfk_3")
 
   @@unique([counselor_id, kpi_id, start_date], map: "counselor_id")
-  @@index([created_by_user_id], map: "created_by_user_id")
-  @@index([kpi_id], map: "kpi_id")
+  @@index([kpi_id], map: "counselorkpi_targets_ibfk_2")
+  @@index([created_by_user_id], map: "counselorkpi_targets_ibfk_3")
 }
 
 model coursecategories {
@@ -85,13 +84,14 @@ model courses {
   duration_text              String?                      @db.VarChar(50)
   price                      Decimal?                     @db.Decimal(10, 2)
   is_active                  Boolean                      @default(true)
+  program_type               courses_program_type         @default(Short_term___Steam)
   created_at                 DateTime?                    @default(now()) @db.DateTime(0)
   updated_at                 DateTime?                    @default(now()) @db.DateTime(0)
   coursecategories           coursecategories             @relation(fields: [category_id], references: [id], onUpdate: Restrict, map: "courses_ibfk_1")
   student_interested_courses student_interested_courses[]
   studentenrollments         studentenrollments[]
 
-  @@index([category_id], map: "category_id")
+  @@index([category_id], map: "courses_ibfk_1")
 }
 
 model kpi_definitions {
@@ -99,8 +99,6 @@ model kpi_definitions {
   name                 String                 @unique(map: "name") @db.VarChar(255)
   unit                 String                 @db.VarChar(50)
   counselorkpi_targets counselorkpi_targets[]
-
-
 }
 
 model student_interested_courses {
@@ -111,9 +109,8 @@ model student_interested_courses {
   students      students @relation(fields: [student_id], references: [id], onUpdate: Restrict, map: "student_interested_courses_ibfk_1")
   courses       courses  @relation(fields: [course_id], references: [id], onUpdate: Restrict, map: "student_interested_courses_ibfk_2")
 
-
   @@id([student_id, course_id])
-  @@index([course_id], map: "course_id")
+  @@index([course_id], map: "student_interested_courses_ibfk_2")
 }
 
 model studentenrollments {
@@ -133,11 +130,10 @@ model studentenrollments {
   users                   users                             @relation(fields: [counselor_id], references: [id], onUpdate: Restrict, map: "studentenrollments_ibfk_3")
   consultationsessions    consultationsessions?             @relation(fields: [consultation_session_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "studentenrollments_ibfk_4")
 
-
   @@unique([student_id, course_id, enrollment_date], map: "student_id")
-  @@index([consultation_session_id], map: "consultation_session_id")
-  @@index([counselor_id], map: "counselor_id")
-  @@index([course_id], map: "course_id")
+  @@index([course_id], map: "studentenrollments_ibfk_2")
+  @@index([counselor_id], map: "studentenrollments_ibfk_3")
+  @@index([consultation_session_id], map: "studentenrollments_ibfk_4")
 }
 
 model students {
@@ -145,6 +141,7 @@ model students {
   student_name                           String                           @db.VarChar(255)
   email                                  String?                          @unique(map: "email") @db.VarChar(255)
   phone_number                           String                           @unique(map: "phone_number") @db.VarChar(20)
+  gender                                 String                           @db.VarChar(20)
   zalo_phone                             String?                          @db.VarChar(20)
   link_facebook                          String?                          @db.VarChar(255)
   date_of_birth                          DateTime?                        @db.Date
@@ -168,11 +165,10 @@ model students {
   users                                  users?                           @relation(fields: [assigned_counselor_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "students_ibfk_1")
   studentstatushistory                   studentstatushistory[]
 
-
-  @@index([assigned_counselor_id], map: "assigned_counselor_id")
+  @@index([assigned_counselor_id], map: "students_ibfk_1")
 }
 
-  model studentstatushistory {
+model studentstatushistory {
   id                 Int                              @id @default(autoincrement()) @db.UnsignedInt
   student_id         Int                              @db.UnsignedInt
   old_status         studentstatushistory_old_status?
@@ -184,9 +180,8 @@ model students {
   students           students                         @relation(fields: [student_id], references: [id], onUpdate: Restrict, map: "studentstatushistory_ibfk_1")
   users              users                            @relation(fields: [changed_by_user_id], references: [id], onUpdate: Restrict, map: "studentstatushistory_ibfk_2")
 
-
-  @@index([changed_by_user_id], map: "changed_by_user_id")
-  @@index([student_id], map: "student_id")
+  @@index([student_id], map: "studentstatushistory_ibfk_1")
+  @@index([changed_by_user_id], map: "studentstatushistory_ibfk_2")
 }
 
 model counselorspecializations {
@@ -194,8 +189,6 @@ model counselorspecializations {
   name                String                @unique(map: "name") @db.VarChar(255)
   description         String?               @db.Text
   userspecializations userspecializations[]
-
-
 }
 
 model userspecializations {
@@ -204,9 +197,17 @@ model userspecializations {
   users                    users                    @relation(fields: [user_id], references: [id], onUpdate: Restrict, map: "userspecializations_ibfk_1")
   counselorspecializations counselorspecializations @relation(fields: [specialization_id], references: [id], onUpdate: Restrict, map: "userspecializations_ibfk_2")
 
-
   @@id([user_id, specialization_id])
-  @@index([specialization_id], map: "specialization_id")
+  @@index([specialization_id], map: "userspecializations_ibfk_2")
+}
+
+model kpi_program_config {
+  id             Int                             @id @default(autoincrement()) @db.UnsignedInt
+  program_type   kpi_program_config_program_type @unique(map: "program_type")
+  annual_target  Decimal                         @db.Decimal(10, 2)
+  monthly_target Decimal?                        @db.Decimal(10, 2)
+  created_at     DateTime?                       @default(now()) @db.DateTime(0)
+  updated_at     DateTime?                       @default(now()) @db.DateTime(0)
 }
 
 enum users_user_type {
@@ -295,36 +296,20 @@ enum students_current_status {
   Archived
 }
 
-
-
-
-
-
-
-
-
-
-model khoahoc {
-  ID          String        @id @db.VarChar(4)
-  Name        String?       @db.VarChar(50)
-  khoahoc_lop khoahoc_lop[]
+enum courses_program_type {
+  Aptech
+  Arena
+  Short_term___Steam @map("Short-term + Steam")
 }
 
-model khoahoc_lop {
-  ID         String   @id @db.VarChar(4)
-  Name       String?  @db.VarChar(50)
-  ID_KhoaHoc String?  @db.VarChar(4)
-  khoahoc    khoahoc? @relation(fields: [ID_KhoaHoc], references: [ID], onDelete: Restrict, onUpdate: Restrict, map: "khoahoc_lop_ibfk_1")
-
-  @@index([ID_KhoaHoc], map: "ID_KhoaHoc")
+enum kpi_program_config_program_type {
+  Aptech
+  Arena
+  Short_term___Steam @map("Short-term + Steam")
 }
 
-model lop {
-  ID             String  @id @db.VarChar(4)
-  Name           String? @db.VarChar(50)
-  ID_KhoaHoc_Lop String? @db.VarChar(4)
-  lop            lop?    @relation("lopTolop", fields: [ID_KhoaHoc_Lop], references: [ID], onDelete: Restrict, onUpdate: Restrict, map: "lop_ibfk_1")
-  other_lop      lop[]   @relation("lopTolop")
-
-  @@index([ID_KhoaHoc_Lop], map: "ID_KhoaHoc_Lop")
+enum users_program_type {
+  Aptech
+  Arena
+  Short_term___Steam @map("Short-term + Steam")
 }

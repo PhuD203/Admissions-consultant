@@ -19,7 +19,7 @@ type ErrorResponse<T = undefined> = {
 };
 
 
-function success<T>(data: T | null = null): SuccessResponse<T | null> {
+function success<T>(data: T | null = null, p0?: string): SuccessResponse<T | null> {
   return {
     status: 'success',
     data: data,
