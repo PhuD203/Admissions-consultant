@@ -11,6 +11,8 @@ import { UserController } from './controllers/user.controller';
 import { StudentController } from './controllers/student.controller';
 import { CourseController } from './controllers/course.controller';
 import { KPIStatisticsController } from './controllers/kpi-definition.controller';
+import { UploadFormController } from './controllers/uploadfile.controller';
+
 import { ConsultingInformationManagementController } from './controllers/consulting-information-management.controller';
 import { AuthController } from './controllers/auth.controller';
 
@@ -54,6 +56,7 @@ const app: Express = createExpressServer({
     KPIStatisticsController,
     ConsultingInformationManagementController,
     AuthController,
+    UploadFormController,
   ],
   defaultErrorHandler: false,
 });

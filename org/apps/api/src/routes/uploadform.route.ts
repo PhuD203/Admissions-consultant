@@ -1,23 +1,30 @@
-const router = require('express').Router();
+// const router = require('express').Router();
 
-import {
-  PostForm,
-  SendEmailController,
-  predictGender,
-  DatauserController,
-} from '../controllers/uploadfile.controller';
-import { isDuplicate } from '../middleware/duplicateChecker';
+// import {
+//   PostForm,
+//   SendEmailController,
+//   DatauserController,
+// } from '../controllers/uploadfile.controller';
 
-// import studentController from '../controllers/student.controller';
+// // import {
+// //   predictGender,
+// // } from '../controllers/uploadfile.controller';
+// import { isDuplicate } from '../middleware/duplicateChecker';
 
-export default (app: any) => {
-  app.use('/api/uploadform', router);
+// // import studentController from '../controllers/student.controller';
 
-  router.post('/submitform', isDuplicate, PostForm);
-  // router.get('/', studentController.getAllStudent);
+// export default (app: any) => {
+//   app.use('/api/uploadform', router);
 
-  router.post('/sendemail', SendEmailController);
-  router.post('/predict-gender', predictGender);
+//   //Api up data len backend
+//   router.post('/submitform', isDuplicate, PostForm);
 
-  router.get('/Datauser', DatauserController);
-};
+//   //Api gui email tu dong
+//   router.post('/sendemail', SendEmailController);
+
+//   // //Api lay gioi tinh
+//   // router.post('/predict-gender', predictGender);
+
+//   //Api lay danh sach cac khoa hoc
+//   router.get('/Datauser', DatauserController);
+// };
