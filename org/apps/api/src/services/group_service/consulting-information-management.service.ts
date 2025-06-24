@@ -13,6 +13,7 @@ import {
 } from '@prisma/client';
 import Paginator from '../paginator';
 import { StudentUpdateApiDto } from '../../dtos/student/student-update.dto';
+import { ConsultationHistory } from '../../dtos/student/student-history.dto';
 const prisma = new PrismaClient();
 
 export interface StudentApiResponse {
@@ -1265,6 +1266,133 @@ class ConsultingInformationManagementService {
     }
   }
 
+  async getConsultationHistoryForCounselorAssignedStudents(
+    counselorId: number,
+    page: number = 1,
+    limit: number = 10 // Đổi tên thành 'limit' cho nhất quán với hàm kia
+  ): Promise<{ consultationHistory: ConsultationHistory[]; metadata: any }> {
+    // Cập nhật kiểu trả về
+    try {
+      // Khởi tạo Paginator
+      const paginator = new Paginator(page, limit);
+      const offset = paginator.offset;
+      const validLimit = paginator.limit; // Sử dụng limit đã được validate bởi Paginator
+
+      // Bước 1: Tìm tất cả học sinh được gán cho người tư vấn này
+      // Không phân trang ở đây vì chúng ta cần tất cả student_id để lọc consultation sessions
+      const students = await prisma.students.findMany({
+        where: {
+          assigned_counselor_id: counselorId,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!students || students.length === 0) {
+        return {
+          consultationHistory: [],
+          metadata: paginator.getMetadata(0),
+        };
+      }
+
+      const studentIds = students.map((s) => s.id);
+
+      // Bước 2a: Đếm tổng số phiên tư vấn phù hợp
+      const totalConsultationHistoryCount =
+        await prisma.consultationsessions.count({
+          where: {
+            student_id: {
+              in: studentIds,
+            },
+            counselor_id: counselorId,
+          },
+        });
+
+      console.log(
+        'Total consultation history count for counselor:',
+        totalConsultationHistoryCount
+      );
+
+      if (totalConsultationHistoryCount === 0) {
+        return {
+          consultationHistory: [],
+          metadata: paginator.getMetadata(0),
+        };
+      }
+
+      // Bước 2b: Lấy các phiên tư vấn đã được phân trang
+      const consultationSessions = await prisma.consultationsessions.findMany({
+        where: {
+          student_id: {
+            in: studentIds,
+          },
+          counselor_id: counselorId,
+        },
+        select: {
+          id: true,
+          session_date: true,
+          duration_minutes: true,
+          notes: true,
+          session_type: true,
+          session_status: true,
+          users: {
+            select: {
+              full_name: true,
+              email: true,
+            },
+          },
+          students: {
+            select: {
+              student_name: true,
+              email: true,
+              phone_number: true,
+            },
+          },
+        },
+        orderBy: {
+          session_date: 'desc',
+        },
+        skip: offset, // Áp dụng offset từ Paginator
+        take: validLimit, // Áp dụng limit từ Paginator
+      });
+
+      // Bước 3: Ánh xạ dữ liệu sang định dạng ConsultationHistory
+      const consultationHistory: ConsultationHistory[] =
+        consultationSessions.map((session) => ({
+          consultation_session_id: session.id,
+          session_date: this.formatDateTime(session.session_date) || '',
+          duration_minutes: session.duration_minutes,
+          session_type:
+            this.mapConsultationSessionType(session.session_type) || '',
+          session_status:
+            this.mapConsultationSessionStatus(session.session_status) || '',
+          session_notes: session.notes ?? '',
+          counselor_name: session.users.full_name ?? '',
+          counseler_email: session.users.email ?? '',
+          student_name: session.students.student_name ?? '',
+          student_email: session.students.email ?? '',
+          student_phone_number: session.students.phone_number ?? '',
+        }));
+
+      // Lấy metadata từ Paginator
+      const metadata = paginator.getMetadata(totalConsultationHistoryCount);
+      console.log('Generated metadata for consultation history:', metadata);
+
+      return {
+        consultationHistory: consultationHistory,
+        metadata,
+      };
+    } catch (error: any) {
+      console.error(
+        `CRITICAL ERROR in ConsultingInformationService.getConsultationHistoryForCounselorAssignedStudents (for counselor ID: ${counselorId}):`,
+        error.message || error
+      );
+      console.error('Error stack:', error.stack);
+      throw error;
+    }
+  }
+
   async searchConsultingInformationByName(
     name: string,
     page: number = 1,
@@ -1581,7 +1709,7 @@ class ConsultingInformationManagementService {
           },
           consultationsessions: {
             orderBy: { session_date: 'desc' },
-            take: 1,
+            take: 1, // Still take 1 to get the latest existing for comparison if needed, but not for direct update.
             include: {
               users: true,
             },
@@ -1799,7 +1927,7 @@ class ConsultingInformationManagementService {
       // Nếu không có thay đổi gì
       if (
         !hasStudentChanges &&
-        !needUpdateConsultation &&
+        !needUpdateConsultation && // Still check, even if it always creates a new one
         !needUpdateInterestedCourses &&
         !needUpdateEnrolledCourses
       ) {
@@ -1811,7 +1939,7 @@ class ConsultingInformationManagementService {
 
       // Sử dụng transaction để đảm bảo tính nhất quán
       const result = await prisma.$transaction(async (prisma) => {
-        let updatedStudent = existingStudent;
+        let updatedStudent = existingStudent; // Initialize with existing student
 
         // 1. Cập nhật bảng students nếu có thay đổi
         if (statusChanged && updateData.current_status) {
@@ -1839,7 +1967,7 @@ class ConsultingInformationManagementService {
               },
               consultationsessions: {
                 orderBy: { session_date: 'desc' },
-                take: 1,
+                take: 1, // Keep this to always fetch the latest after any changes
                 include: {
                   users: true,
                 },
@@ -1855,104 +1983,51 @@ class ConsultingInformationManagementService {
           });
         }
 
-        // 3. Xử lý consultation session
+        // 3. Xử lý consultation session: LUÔN TẠO MỚI nếu có dữ liệu cập nhật
         if (needUpdateConsultation) {
-          const latestConsultation = existingStudent.consultationsessions[0];
+          let counselorIdForNewSession =
+            updateData.assigned_counselor_id ||
+            existingStudent.assigned_counselor_id ||
+            updatedByUserId;
 
-          if (latestConsultation) {
-            // Cập nhật consultation session hiện có
-            const consultationUpdateData: any = {};
-
-            if (updateData.last_consultation_date !== undefined) {
-              if (updateData.last_consultation_date) {
-                consultationUpdateData.session_date = new Date(
-                  updateData.last_consultation_date
-                );
-              }
-            }
-            if (updateData.last_consultation_duration_minutes !== undefined) {
-              consultationUpdateData.duration_minutes =
-                updateData.last_consultation_duration_minutes;
-            }
-            if (updateData.last_consultation_notes !== undefined) {
-              consultationUpdateData.notes = updateData.last_consultation_notes;
-            }
-            if (updateData.last_consultation_type !== undefined) {
-              consultationUpdateData.session_type =
-                updateData.last_consultation_type;
-            }
-            if (updateData.last_consultation_status !== undefined) {
-              consultationUpdateData.session_status =
-                updateData.last_consultation_status;
-            }
-
-            // Nếu có counselor name mới, cần tìm counselor_id tương ứng
-            if (updateData.last_consultation_counselor_name !== undefined) {
-              // Tìm counselor theo tên (có thể cần điều chỉnh logic này)
-              const counselor = await prisma.users.findFirst({
-                where: {
-                  full_name: {
-                    contains: updateData.last_consultation_counselor_name
-                      ? updateData.last_consultation_counselor_name
-                          .split('(')[0]
-                          .trim()
-                      : '',
-                  },
+          // Nếu có counselor name mới, tìm counselor_id tương ứng
+          if (updateData.last_consultation_counselor_name !== undefined) {
+            const counselor = await prisma.users.findFirst({
+              where: {
+                full_name: {
+                  contains: updateData.last_consultation_counselor_name
+                    ? updateData.last_consultation_counselor_name
+                        .split('(')[0]
+                        .trim()
+                    : '',
                 },
-              });
-              if (counselor) {
-                consultationUpdateData.counselor_id = counselor.id;
-              }
-            }
-
-            if (Object.keys(consultationUpdateData).length > 0) {
-              await prisma.consultationsessions.update({
-                where: { id: latestConsultation.id },
-                data: consultationUpdateData,
-              });
-            }
-          } else {
-            // Tạo consultation session mới nếu chưa có
-            let counselorId =
-              updateData.assigned_counselor_id ||
-              existingStudent.assigned_counselor_id ||
-              updatedByUserId;
-
-            // Nếu có counselor name, tìm counselor_id tương ứng
-            if (updateData.last_consultation_counselor_name !== undefined) {
-              const counselor = await prisma.users.findFirst({
-                where: {
-                  full_name: {
-                    contains: updateData.last_consultation_counselor_name
-                      ? updateData.last_consultation_counselor_name
-                          .split('(')[0]
-                          .trim()
-                      : '',
-                  },
-                },
-              });
-              if (counselor) {
-                counselorId = counselor.id;
-              }
-            }
-
-            await prisma.consultationsessions.create({
-              data: {
-                student_id: studentId,
-                counselor_id: counselorId,
-                session_date: updateData.last_consultation_date
-                  ? new Date(updateData.last_consultation_date)
-                  : new Date(),
-                session_type: (updateData.last_consultation_type ||
-                  'Phone_Call') as consultationsessions_session_type,
-                session_status: (updateData.last_consultation_status ||
-                  'Scheduled') as consultationsessions_session_status,
-                notes: updateData.last_consultation_notes || '',
-                duration_minutes:
-                  updateData.last_consultation_duration_minutes || null,
               },
             });
+            if (counselor) {
+              counselorIdForNewSession = counselor.id;
+            }
           }
+
+          await prisma.consultationsessions.create({
+            data: {
+              student_id: studentId,
+              counselor_id: counselorIdForNewSession,
+              session_date: updateData.last_consultation_date
+                ? new Date(updateData.last_consultation_date)
+                : new Date(),
+              session_type: (updateData.last_consultation_type ||
+                'Phone_Call') as consultationsessions_session_type,
+              session_status: (updateData.last_consultation_status ||
+                'Scheduled') as consultationsessions_session_status,
+              notes: updateData.last_consultation_notes || '',
+              duration_minutes:
+                updateData.last_consultation_duration_minutes || null,
+            },
+          });
+          // After creating a new consultation, the `updatedStudent` object
+          // fetched earlier might not have this new session.
+          // To ensure the final returned object reflects the *latest* state,
+          // we re-fetch the student at the end of the transaction.
         }
 
         // 4. Xử lý student_interested_courses nếu có thông tin về khóa học quan tâm
@@ -2084,11 +2159,11 @@ class ConsultingInformationManagementService {
           }
         }
 
-        // 6. Tạo consultation session mới nếu counselor thay đổi (và chưa có consultation update)
+        // 6. Tạo consultation session mới nếu counselor thay đổi (và chưa có consultation update từ updateData)
         if (
           counselorChanged &&
           updateData.assigned_counselor_id &&
-          !needUpdateConsultation
+          !needUpdateConsultation // Only create if consultation wasn't already handled by updateData
         ) {
           await prisma.consultationsessions.create({
             data: {
@@ -2107,7 +2182,7 @@ class ConsultingInformationManagementService {
         if (
           statusChanged &&
           updateData.current_status === 'Registered' &&
-          !needUpdateEnrolledCourses
+          !needUpdateEnrolledCourses // Only auto-enroll if enrollment wasn't already handled by updateData
         ) {
           const existingEnrollment = await prisma.studentenrollments.findFirst({
             where: { student_id: studentId },
@@ -2148,7 +2223,7 @@ class ConsultingInformationManagementService {
             },
             consultationsessions: {
               orderBy: { session_date: 'desc' },
-              take: 1,
+              take: 1, // Still taking 1 to get the latest (which might be the newly created one)
               include: {
                 users: true,
               },

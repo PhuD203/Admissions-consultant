@@ -1,5 +1,4 @@
 import { PrismaClient, users_program_type } from '@prisma/client';
-import { Service } from 'typedi';
 
 const prisma = new PrismaClient();
 
@@ -58,8 +57,7 @@ interface KPIWarning {
   warningMessage: string;
 }
 
-@Service()
-export class KPIStatisticsService {
+class KPIStatisticsService {
 
   async calculateKPIStatistics(
     counselorId: number | null = null,
@@ -441,3 +439,4 @@ export class KPIStatisticsService {
     }
   }
 }
+export default new KPIStatisticsService();

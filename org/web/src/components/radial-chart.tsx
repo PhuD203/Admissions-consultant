@@ -17,32 +17,104 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
-const chartData = [{ month: "january", desktop: 1260, mobile: 570 }]
+
+// Type definitions for the API data structure
+interface CampaignData {
+  gaugeData: {
+    value: number;
+    maxValue: number;
+    color: string;
+    status: string;
+    title: string;
+  };
+  summary: {
+    totalVisitors: number;
+    totalRegistered: number;
+    totalEngaging: number;
+    conversionRate: string;
+    engagementRate: string;
+    growthRate: string;
+    period: string;
+    trendingText: string;
+  };
+  sourceBreakdown: Array<{
+    source: string;
+    totalLeads: number;
+    engagingCount: number;
+    registeredCount: number;
+    droppedCount: number;
+    conversionRate: string;
+    engagementRate: string;
+    avgConversionDays: number;
+  }>;
+}
+
+interface RadialChartStackedProps {
+  data?: CampaignData;
+}
 
 const chartConfig = {
-  desktop: {
-    label: "Desktop",
+  registered: {
+    label: "Đã đăng ký",
     color: "hsl(var(--chart-1))",
   },
-  mobile: {
-    label: "Mobile",
+  engaging: {
+    label: "Đang tương tác",
     color: "hsl(var(--chart-2))",
+  },
+  visitors: {
+    label: "Khách truy cập",
+    color: "hsl(var(--chart-3))",
   },
 } satisfies ChartConfig
 
-export function RadialChartStacked() {
-  const totalVisitors = chartData[0].desktop + chartData[0].mobile
+export function RadialChartStacked({ data }: RadialChartStackedProps) {
+  // Handle loading state or no data
+  if (!data) {
+    return (
+      <Card className="flex flex-col">
+        <CardHeader className="items-center pb-0">
+          <CardTitle>Hiệu quả chiến dịch</CardTitle>
+          <CardDescription>Đang tải dữ liệu...</CardDescription>
+        </CardHeader>
+        <CardContent className="flex-1 pb-0">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-pulse">
+              <div className="w-48 h-48 bg-gray-200 rounded-full"></div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Transform API data for the chart
+  const chartData = [
+    {
+      period: data.summary.period,
+      registered: data.summary.totalRegistered,
+      engaging: data.summary.totalEngaging,
+      visitors: data.summary.totalVisitors - data.summary.totalRegistered - data.summary.totalEngaging,
+    }
+  ]
+
+  // Calculate total for center display
+  const totalVisitors = data.summary.totalVisitors
+
+  // Parse growth rate for trending display
+  const growthRate = parseFloat(data.summary.growthRate.replace('%', ''))
+  const isPositiveTrend = growthRate >= 0
 
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
         <CardTitle>Hiệu quả chiến dịch</CardTitle>
-        <CardDescription>January - June 2024</CardDescription>
+        <CardDescription>{data.summary.period}</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-1 items-center pb-0">
+      <CardContent className="flex-1 pb-0">
         <ChartContainer
           config={chartConfig}
-          className="mx-auto aspect-square w-full max-w-[250px]"
+          className="mx-auto aspect-square max-h-[250px]"
         >
           <RadialBarChart
             data={chartData}
@@ -52,57 +124,91 @@ export function RadialChartStacked() {
           >
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent hideLabel />}
+              content={
+                <ChartTooltipContent 
+                  hideLabel 
+                  nameKey="period"
+                  formatter={(value, name) => [
+                    `${value} người`,
+                    chartConfig[name as keyof typeof chartConfig]?.label || name
+                  ]}
+                />
+              }
             />
-            <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
-              <Label
-                content={({ viewBox }) => {
-                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                    return (
-                      <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
-                        <tspan
-                          x={viewBox.cx}
-                          y={(viewBox.cy || 0) - 16}
-                          className="fill-foreground text-2xl font-bold"
-                        >
-                          {totalVisitors.toLocaleString()}
-                        </tspan>
-                        <tspan
-                          x={viewBox.cx}
-                          y={(viewBox.cy || 0) + 4}
-                          className="fill-muted-foreground"
-                        >
-                          Visitors
-                        </tspan>
-                      </text>
-                    )
-                  }
-                }}
-              />
-            </PolarRadiusAxis>
+            <PolarRadiusAxis tick={false} tickCount={7} axisLine={false} />
             <RadialBar
-              dataKey="desktop"
+              dataKey="visitors"
               stackId="a"
               cornerRadius={5}
-              fill="var(--color-desktop)"
+              fill="var(--color-visitors)"
               className="stroke-transparent stroke-2"
             />
             <RadialBar
-              dataKey="mobile"
-              fill="var(--color-mobile)"
+              dataKey="engaging"
               stackId="a"
               cornerRadius={5}
+              fill="var(--color-engaging)"
               className="stroke-transparent stroke-2"
+            />
+            <RadialBar
+              dataKey="registered"
+              stackId="a"
+              cornerRadius={5}
+              fill="var(--color-registered)"
+              className="stroke-transparent stroke-2"
+            />
+            <Label
+              content={({ viewBox }) => {
+                if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                  return (
+                    <text
+                      x={viewBox.cx}
+                      y={viewBox.cy}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                    >
+                      <tspan
+                        x={viewBox.cx}
+                        y={viewBox.cy}
+                        className="fill-foreground text-4xl font-bold"
+                      >
+                        {totalVisitors.toLocaleString()}
+                      </tspan>
+                      <tspan
+                        x={viewBox.cx}
+                        y={(viewBox.cy || 0) + 24}
+                        className="fill-muted-foreground"
+                      >
+                        Khách truy cập
+                      </tspan>
+                    </text>
+                  )
+                }
+              }}
             />
           </RadialBarChart>
         </ChartContainer>
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
         <div className="flex items-center gap-2 font-medium leading-none">
-          Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
+          {isPositiveTrend ? (
+            <>
+              Tăng trưởng {Math.abs(growthRate)}% trong kỳ này
+              <TrendingUp className="h-4 w-4" />
+            </>
+          ) : (
+            <>
+              Giảm {Math.abs(growthRate)}% trong kỳ này
+              <TrendingUp className="h-4 w-4 rotate-180" />
+            </>
+          )}
+        </div>
+        <div className="flex items-center gap-2 leading-none text-muted-foreground">
+          Tỷ lệ chuyển đổi: {data.summary.conversionRate} | 
+          Tỷ lệ tương tác: {data.summary.engagementRate}
         </div>
         <div className="leading-none text-muted-foreground">
-          Showing total visitors for the last 6 months
+          {data.summary.trendingText}
         </div>
       </CardFooter>
     </Card>
