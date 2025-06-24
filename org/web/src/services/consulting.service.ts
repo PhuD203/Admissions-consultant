@@ -1,4 +1,5 @@
 import apiClient from '@/lib/axios.lib';
+import { ConsultingApiResponseHistory, consultingApiResponseSchemaHistory } from '@/lib/schema/consulting-data-history';
 import { ConsultingApiResponse } from '@/lib/schema/consulting-data-schema';
 
 export const consultingService = {
@@ -122,7 +123,7 @@ export const consultingService = {
   // Thêm vào consultingService object
   updateConsultingInformation: async (
     studentId: number,
-    updateData: any, // Bạn có thể định nghĩa interface cụ thể cho updateData
+    updateData: any // Bạn có thể định nghĩa interface cụ thể cho updateData
   ): Promise<any> => {
     // Có thể định nghĩa return type cụ thể
     try {
@@ -167,6 +168,40 @@ export const consultingService = {
       }
 
       throw error; // Ném lại lỗi để React Query có thể bắt
+    }
+  },
+
+  async getConsultingInformationHistoryByConselorId( 
+    page: number = 1,
+    limit: number = 10
+  ): Promise<ConsultingApiResponseHistory> {
+    try {
+
+      const response = await apiClient.get(
+        // Thay đổi URL để bao gồm counselorId trong path
+        `/consulting-information-management/history`, 
+        {
+          params: {
+            page: page,
+            limit: limit,
+          },
+        }
+      );
+      console.log(
+        'consulting.service.ts: Response for consulting by counselorId:',
+        response.data
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error(
+        'Error fetching consulting information by counselor ID:',
+        error
+      );
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+      }
+      throw error;
     }
   },
 };

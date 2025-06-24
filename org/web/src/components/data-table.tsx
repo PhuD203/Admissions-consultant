@@ -183,7 +183,7 @@ const getDaysDifference = (date1: any, date2: any) => {
 
 const isConsultationOverdue = (
   lastConsultationDate: any,
-  daysThreshold = 2
+  daysThreshold = 3
 ) => {
   if (!lastConsultationDate) return false;
 
@@ -829,6 +829,7 @@ function TableCellViewer({
     setInitialData(item);
     resetForm(item);
   }, [item]);
+  
   const [studentName, setStudentName] = React.useState(item.student_name);
   const [email, setEmail] = React.useState(item.email ?? '');
   const [phoneNumber, setPhoneNumber] = React.useState(item.phone_number);
@@ -957,157 +958,151 @@ function TableCellViewer({
     resetForm(initialData);
   };
 
-  // Helper component for DatePicker
-  const HybridDatePickerField = ({
-    label,
-    date,
-    setDate,
-    id,
-    readOnly = false,
-  }: {
-    label: string;
-    date: Date | undefined;
-    setDate: (d: Date | undefined) => void;
-    id: string;
-    readOnly?: boolean;
-  }) => {
-    const formatDateForInput = (date: Date | undefined) => {
-      if (!date) return '';
-      return format(date, 'yyyy-MM-dd');
-    };
+  const HybridDatePickerField = React.memo(
+    ({
+      label,
+      date,
+      setDate,
+      id,
+      readOnly = false,
+    }: {
+      label: string;
+      date: Date | undefined;
+      setDate: (d: Date | undefined) => void;
+      id: string;
+      readOnly?: boolean;
+    }) => {
+      const formatDateForInput = useCallback((date: Date | undefined) => {
+        if (!date) return '';
+        return format(date, 'yyyy-MM-dd');
+      }, []);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      console.log(`Date input changed for ${id}:`, value);
+      const handleInputChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+          const value = e.target.value;
+          if (value) {
+            try {
+              const newDate = new Date(value);
+              if (!date || newDate.getTime() !== date.getTime()) {
+                setDate(newDate);
+              }
+            } catch (error) {
+              console.error('Error parsing date:', error);
+            }
+          } else {
+            setDate(undefined);
+          }
+        },
+        [date, setDate]
+      );
 
-      if (value) {
-        try {
-          const newDate = new Date(value);
-          setDate(newDate);
-        } catch (error) {
-          console.error('Error parsing date:', error);
-        }
-      } else {
-        setDate(undefined);
-      }
-    };
+      const handleCalendarSelect = useCallback(
+        (selectedDate: Date | undefined) => {
+          if (
+            (!date && selectedDate) ||
+            (date && !selectedDate) ||
+            (date && selectedDate && date.getTime() !== selectedDate.getTime())
+          ) {
+            setDate(selectedDate);
+          }
+        },
+        [date, setDate]
+      );
 
-    const handleCalendarSelect = (selectedDate: Date | undefined) => {
-      console.log(`Calendar date selected for ${id}:`, selectedDate);
-      setDate(selectedDate);
-    };
-
-    return (
-      <div className="flex flex-col gap-3">
-        <Label htmlFor={id}>{label}</Label>
-        <div className="flex gap-2">
-          {/* Native date input */}
-          <Input
-            id={id}
-            type="date"
-            value={formatDateForInput(date)}
-            onChange={handleInputChange}
-            readOnly={readOnly}
-            className={cn('flex-1', readOnly && 'bg-muted cursor-not-allowed')}
-          />
-
-          {/* Calendar button */}
-          {!readOnly && (
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="shrink-0"
-                  type="button"
-                >
-                  <CalendarIcon className="h-4 w-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-auto p-0 z-[9999]"
-                style={{ pointerEvents: 'auto' }}
-                align="end"
-                side="top"
-                sideOffset={4}
-              >
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={(selectedDate) => {
-                    console.log('Selected date:', selectedDate); // Thêm dòng này để debug
-                    setDate(selectedDate);
-                  }}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          )}
+      return (
+        <div className="flex flex-col gap-3">
+          <Label htmlFor={id}>{label}</Label>
+          <div className="flex gap-2">
+            <Input
+              id={id}
+              type="date"
+              value={formatDateForInput(date)}
+              onChange={handleInputChange}
+              readOnly={readOnly}
+              className={cn(
+                'flex-1',
+                readOnly && 'bg-muted cursor-not-allowed'
+              )}
+            />
+            {!readOnly && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="icon" className="shrink-0">
+                    <CalendarIcon className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={handleCalendarSelect}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
         </div>
-      </div>
-    );
-  };
+      );
+    }
+  );
 
   // Helper component for expandable text content
-  const ExpandableTextField = ({
-    label,
-    content,
-    id,
-    show,
-    setShow,
-    onContentChange,
-    readOnly = false,
-  }: {
-    label: string;
-    content: string | null | undefined;
-    id: string;
-    show: boolean;
-    setShow: (b: boolean) => void;
-    onContentChange?: (value: string) => void;
-    readOnly?: boolean;
-  }) => (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <Label htmlFor={id}>{label}</Label>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setShow(!show)}
-          type="button"
-        >
-          <ChevronDownIcon
-            className={cn(
-              'size-4 transition-transform',
-              show ? 'rotate-180' : 'rotate-0'
-            )}
-          />
-          <span className="sr-only">
-            Toggle {label.toLowerCase()} visibility
-          </span>
-        </Button>
-      </div>
-      {show && (
-        <div className="border rounded-md p-3 bg-muted/20">
-          {onContentChange && !readOnly ? (
-            <textarea
-              id={id}
-              className="w-full h-24 p-2 bg-transparent text-sm text-muted-foreground resize-y focus:outline-none"
-              value={content ?? ''}
-              onChange={(e) => onContentChange(e.target.value)}
-              placeholder={`Nhập ${label.toLowerCase()}...`}
-            />
-          ) : (
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-              {content ? (
-                content
+  const ExpandableTextField = React.memo(
+    ({
+      label,
+      content,
+      id,
+      show,
+      setShow,
+      onContentChange,
+      readOnly = false,
+    }: {
+      label: string;
+      content: string | null | undefined;
+      id: string;
+      show: boolean;
+      setShow: (b: boolean) => void;
+      onContentChange?: (value: string) => void;
+      readOnly?: boolean;
+    }) => {
+      const toggleShow = useCallback(() => setShow(!show), [show, setShow]);
+
+      return (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <Label htmlFor={id}>{label}</Label>
+            <Button variant="ghost" size="icon" onClick={toggleShow}>
+              <ChevronDownIcon
+                className={cn(
+                  'size-4 transition-transform',
+                  show ? 'rotate-180' : 'rotate-0'
+                )}
+              />
+            </Button>
+          </div>
+          {show && (
+            <div className="border rounded-md p-3 bg-muted/20">
+              {onContentChange && !readOnly ? (
+                <textarea
+                  id={id}
+                  className="w-full h-24 p-2 bg-transparent text-sm text-muted-foreground resize-y focus:outline-none"
+                  value={content ?? ''}
+                  onChange={(e) => onContentChange(e.target.value)}
+                  placeholder={`Nhập ${label.toLowerCase()}...`}
+                />
               ) : (
-                <span className="italic">Không có thông tin.</span>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {content || (
+                    <span className="italic">Không có thông tin.</span>
+                  )}
+                </p>
               )}
-            </p>
+            </div>
           )}
         </div>
-      )}
-    </div>
+      );
+    }
   );
 
   const getBackendStatus = (status: string): string => {

@@ -101,7 +101,7 @@ export class ConsultingInformationManagementController {
     @QueryParam('page') page: number = 1,
     @QueryParam('limit') limit: number = 10,
     @Res() res: any,
-    @Req() req: Request,
+    @Req() req: Request
   ) {
     const counselorId = req.user?.id;
 
@@ -117,6 +117,54 @@ export class ConsultingInformationManagementController {
         page,
         limit
       );
+      if (users === null) {
+        return res.json(
+          jsend.error(
+            'Failed to retrieve consulting information by conselor due to a service error.'
+          )
+        );
+      }
+      return res.json(jsend.success(users));
+    } catch (e: any) {
+      console.error(
+        'Error in ConsultingInformationManagementController.getAllUsers:',
+        e
+      );
+      let errorMessage = 'An unexpected error occurred.';
+      if (e instanceof Error) {
+        errorMessage = e.message;
+      } else if (typeof e === 'string') {
+        errorMessage = e;
+      } else if (e && typeof e === 'object' && e.message) {
+        errorMessage = e.message;
+      }
+      return res.json(jsend.error(errorMessage));
+    }
+  }
+
+  @Get('/history') // Cẩn thận với đường dẫn này, nó có thể xung đột với @Get('/:id') ở dưới
+  @UseBefore(authenticateToken())
+  async getAllConsultingByConselor(
+    @QueryParam('page') page: number = 1,
+    @QueryParam('limit') limit: number = 10,
+    @Res() res: any,
+    @Req() req: Request
+  ) {
+    const counselorId = req.user?.id;
+
+    if (typeof counselorId !== 'number' || isNaN(counselorId)) {
+      return res
+        .status(400)
+        .json(jsend.fail('Invalid or missing counselor ID in user token.'));
+    }
+
+    try {
+      const users =
+        await groupService.getConsultationHistoryForCounselorAssignedStudents(
+          counselorId,
+          page,
+          limit
+        );
       if (users === null) {
         return res.json(
           jsend.error(
@@ -210,7 +258,6 @@ export class ConsultingInformationManagementController {
           jsend.fail('Update data is required and cannot be empty.')
         );
       }
-
 
       console.log('Updated by user ID:', counselorId);
 

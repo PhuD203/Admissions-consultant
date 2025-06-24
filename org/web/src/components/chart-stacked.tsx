@@ -1,7 +1,8 @@
-"use client"
+// src/components/chart-stacked.tsx
+'use client';
 
-import { TrendingUp } from "lucide-react"
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import { TrendingUp } from 'lucide-react';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 
 import {
   Card,
@@ -10,48 +11,176 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from '@/components/ui/card';
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/chart"
+} from '@/components/ui/chart';
+import { ConsultationAnalyticsResult } from '@/services/report.service';
 
-const chartData = [
-  { month: "January", desktop: 186, mobile: 80 },
-  { month: "February", desktop: 305, mobile: 200 },
-  { month: "March", desktop: 237, mobile: 120 },
-  { month: "April", desktop: 73, mobile: 190 },
-  { month: "May", desktop: 209, mobile: 130 },
-  { month: "June", desktop: 214, mobile: 140 },
-]
-
-// CHỈNH SỬA chartConfig để sử dụng biến màu của BIỂU ĐỒ A
+// Define the chart configuration based on your service interface
 const chartConfig = {
-  desktop: {
-    label: "Desktop",
-    color: "hsl(var(--chart-A-1))", // Sử dụng biến --chart-A-1
+  phoneCall: {
+    label: 'Gọi điện',
+    color: 'hsl(var(--chart-A-1))',
   },
-  mobile: {
-    label: "Mobile",
-    color: "hsl(var(--chart-A-2))", // Sử dụng biến --chart-A-2
+  onlineMeeting: {
+    label: 'Họp online',
+    color: 'hsl(var(--chart-A-2))',
   },
-  // Nếu bạn có nhiều series, hãy thêm các biến chart-A-3, chart-A-4, ...
-  // Ví dụ:
-  // series3: {
-  //   label: "Series 3",
-  //   color: "hsl(var(--chart-A-3))",
-  // },
-} satisfies ChartConfig
+  inPerson: {
+    label: 'Trực tiếp',
+    color: 'hsl(var(--chart-A-3))',
+  },
+  email: {
+    label: 'Email',
+    color: 'hsl(var(--chart-A-4))',
+  },
+  chat: {
+    label: 'Chat',
+    color: 'hsl(var(--chart-A-5))',
+  },
+} satisfies ChartConfig;
 
-export function Component() {
+interface ComponentProps {
+  data: ConsultationAnalyticsResult | null | undefined;
+  isLoading: boolean;
+  error: Error | null;
+}
+
+export function Component({ data, isLoading, error }: ComponentProps) {
+  // Loading state
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="h-6 bg-gray-200 rounded w-1/2 mb-2 animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+        </CardHeader>
+        <CardContent>
+          <div className="h-64 bg-gray-200 rounded animate-pulse"></div>
+        </CardContent>
+        <CardFooter>
+          <div className="h-4 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+        </CardFooter>
+      </Card>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Phân tích kênh tư vấn</CardTitle>
+          <CardDescription>Lỗi tải dữ liệu</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-64 border border-red-200 rounded-lg bg-red-50 text-center">
+            <div>
+              <div className="text-red-600 mb-2">⚠️ Lỗi tải dữ liệu</div>
+              <div className="text-sm text-red-500">
+                {error.message || 'Không thể tải dữ liệu biểu đồ'}
+              </div>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-2 px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Thử lại
+              </button>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter>
+          <div className="flex w-full items-start gap-2 text-sm">
+            <div className="grid gap-2">
+              <div className="flex items-center gap-2 font-medium leading-none">
+                Không có dữ liệu trending.
+              </div>
+              <div className="flex items-center gap-2 leading-none text-muted-foreground">
+                Dữ liệu không khả dụng.
+              </div>
+            </div>
+          </div>
+        </CardFooter>
+      </Card>
+    );
+  }
+
+  // Empty state
+  if (!data || !data.chartData || data.chartData.chartData.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Phân tích kênh tư vấn</CardTitle>
+          <CardDescription>
+            Hiển thị số liệu tư vấn theo các kênh
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-64 border border-gray-200 rounded-lg bg-gray-50 text-gray-500">
+            Không có dữ liệu để hiển thị.
+          </div>
+        </CardContent>
+        <CardFooter>
+          <div className="flex w-full items-start gap-2 text-sm">
+            <div className="grid gap-2">
+              <div className="flex items-center gap-2 font-medium leading-none">
+                Không có dữ liệu trending.
+              </div>
+              <div className="flex items-center gap-2 leading-none text-muted-foreground">
+                {data?.summary?.period || 'Không có dữ liệu'}
+              </div>
+            </div>
+          </div>
+        </CardFooter>
+      </Card>
+    );
+  }
+
+  // Main render with data
+  const chartData = data.chartData.chartData;
+  const summary = data.summary;
+
+  // Calculate trending
+  let trendingPercentage = 0;
+  let trendingDirectionIcon = <TrendingUp className="h-4 w-4" />;
+  let trendingColor = 'text-green-500';
+
+  if (chartData.length >= 2) {
+    const lastMonthTotal = Object.values(chartData[chartData.length - 1]).reduce(
+      (sum, value) => (typeof value === 'number' ? sum + value : sum),
+      0
+    );
+    const prevMonthTotal = Object.values(chartData[chartData.length - 2]).reduce(
+      (sum, value) => (typeof value === 'number' ? sum + value : sum),
+      0
+    );
+
+    if (prevMonthTotal > 0) {
+      trendingPercentage = ((lastMonthTotal - prevMonthTotal) / prevMonthTotal) * 100;
+    } else if (lastMonthTotal > 0) {
+      trendingPercentage = 100;
+    }
+
+    if (trendingPercentage < 0) {
+      trendingDirectionIcon = <TrendingUp className="h-4 w-4 transform rotate-180 text-red-500" />;
+      trendingColor = 'text-red-500';
+    }
+  }
+
+  const trendingText = `${trendingPercentage >= 0 ? 'Tăng' : 'Giảm'} ${Math.abs(
+    trendingPercentage
+  ).toFixed(1)}% tháng này`;
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Số lượng tư vấn viên </CardTitle>
+        <CardTitle>Phân tích kênh tư vấn</CardTitle>
         <CardDescription>
-          Showing total visitors for the last 6 months
+          Hiển thị số liệu tư vấn theo các kênh trong {summary.period}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -72,26 +201,49 @@ export function Component() {
               tickMargin={8}
               tickFormatter={(value) => value.slice(0, 3)}
             />
+            <YAxis />
             <ChartTooltip
               cursor={false}
               content={<ChartTooltipContent indicator="dot" />}
             />
             <Area
-              dataKey="mobile"
+              dataKey="phoneCall"
               type="natural"
-              // CHỈNH SỬA CÁC THUỘC TÍNH FILL VÀ STROKE
-              fill="hsl(var(--chart-A-2))" // Sử dụng biến --chart-A-2
+              fill="hsl(var(--chart-A-1))"
               fillOpacity={0.4}
-              stroke="hsl(var(--chart-A-2))" // Sử dụng biến --chart-A-2
+              stroke="hsl(var(--chart-A-1))"
               stackId="a"
             />
             <Area
-              dataKey="desktop"
+              dataKey="onlineMeeting"
               type="natural"
-              // CHỈNH SỬA CÁC THUỘC TÍNH FILL VÀ STROKE
-              fill="hsl(var(--chart-A-1))" // Sử dụng biến --chart-A-1
+              fill="hsl(var(--chart-A-2))"
               fillOpacity={0.4}
-              stroke="hsl(var(--chart-A-1))" // Sử dụng biến --chart-A-1
+              stroke="hsl(var(--chart-A-2))"
+              stackId="a"
+            />
+            <Area
+              dataKey="inPerson"
+              type="natural"
+              fill="hsl(var(--chart-A-3))"
+              fillOpacity={0.4}
+              stroke="hsl(var(--chart-A-3))"
+              stackId="a"
+            />
+            <Area
+              dataKey="email"
+              type="natural"
+              fill="hsl(var(--chart-A-4))"
+              fillOpacity={0.4}
+              stroke="hsl(var(--chart-A-4))"
+              stackId="a"
+            />
+            <Area
+              dataKey="chat"
+              type="natural"
+              fill="hsl(var(--chart-A-5))"
+              fillOpacity={0.4}
+              stroke="hsl(var(--chart-A-5))"
               stackId="a"
             />
           </AreaChart>
@@ -100,15 +252,17 @@ export function Component() {
       <CardFooter>
         <div className="flex w-full items-start gap-2 text-sm">
           <div className="grid gap-2">
-            <div className="flex items-center gap-2 font-medium leading-none">
-              Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
+            <div className={`flex items-center gap-2 font-medium leading-none ${trendingColor}`}>
+              {trendingText} {trendingDirectionIcon}
             </div>
             <div className="flex items-center gap-2 leading-none text-muted-foreground">
-              January - June 2024
+              Tổng lượt tư vấn: {summary.totalConsultations.toLocaleString()} | 
+              Thời gian TB: {summary.averageDuration} phút | 
+              Tăng trưởng: {summary.growthRate}
             </div>
           </div>
         </div>
       </CardFooter>
     </Card>
-  )
+  );
 }

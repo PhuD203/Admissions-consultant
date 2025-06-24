@@ -1,37 +1,44 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {consultingService} from '../services/consulting.service';
-import { consultingApiResponseSchema } from '@/lib/schema/consulting-data-schema';
-
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  UseQueryResult,
+} from '@tanstack/react-query';
+import { consultingService } from '../services/consulting.service';
+import {
+  ConsultingApiResponse,
+  consultingApiResponseSchema,
+} from '@/lib/schema/consulting-data-schema';
+import { consultingApiResponseSchemaHistory } from '@/lib/schema/consulting-data-history';
 
 export const useConsultingList = (
   page: number = 1,
   limit: number = 10,
-  counselorId?: number 
+  counselorId?: number
 ) => {
   return useQuery({
-
-    queryKey: ['consultingList', counselorId, page, limit], 
+    queryKey: ['consultingList', counselorId, page, limit],
     queryFn: async () => {
-      const response = await consultingService.getConsultingInformationByConselorId(
-        counselorId,
-        page,
-        limit
-      );
+      const response =
+        await consultingService.getConsultingInformationByConselorId(
+          counselorId,
+          page,
+          limit
+        );
       const parsedResponse = consultingApiResponseSchema.parse(response);
       return parsedResponse;
     },
     placeholderData: (previousData) => previousData,
-
   });
 };
 
 export const useSearchConsultingList = (
-  name: string, 
+  name: string,
   page: number = 1,
   limit: number = 10
 ) => {
   return useQuery({
-    queryKey: ['consultingSearch', name, page, limit], 
+    queryKey: ['consultingSearch', name, page, limit],
     queryFn: async () => {
       const response = await consultingService.searchConsultingInformation(
         name,
@@ -42,10 +49,38 @@ export const useSearchConsultingList = (
       return parsedResponse;
     },
 
-    enabled: !!name && name.trim().length > 0, 
+    enabled: !!name && name.trim().length > 0,
 
     placeholderData: (previousData) => previousData,
-    staleTime: 5 * 60 * 1000, 
-    
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useConsultingHistoryList = (
+  page: number = 1,
+  limit: number = 10
+) => {
+  return useQuery({
+    queryKey: ['consultingHistoryList', page, limit],
+    queryFn: async () => {
+      const response =
+        await consultingService.getConsultingInformationHistoryByConselorId(
+          page,
+          limit
+        );
+      console.log('Raw API response:', response);
+
+      try {
+        const parsed = consultingApiResponseSchemaHistory.parse(response);
+        return parsed;
+      } catch (error) {
+        console.error('Validation error details:', error);
+        // More specific error message
+        throw new Error(
+          'Dữ liệu trả về không khớp với định dạng mong đợi. Vui lòng kiểm tra console để biết chi tiết.'
+        );
+      }
+    },
+    placeholderData: (previousData) => previousData,
   });
 };

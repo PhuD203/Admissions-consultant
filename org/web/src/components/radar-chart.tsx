@@ -1,6 +1,6 @@
 "use client"
 
-import { TrendingUp, TrendingDown } from "lucide-react"
+import { TrendingUp, TrendingDown, Activity } from "lucide-react"
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart } from "recharts"
 
 import {
@@ -12,150 +12,194 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import {
-  ChartConfig, // Đảm bảo ChartConfig được import
+  ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
 
+// Import types từ service
+import { ConsultationAnalyticsResult } from "@/services/report.service"
+
 // Định nghĩa props cho component Radar Chart
 interface RadarChartProps {
-  colorSet: "C" | "D"; // Prop để chọn bộ màu "C" hoặc "D"
+  colorSet: "C" | "D";
   title?: string;
   description?: string;
+  data?: ConsultationAnalyticsResult; // Thêm prop data từ API
 }
 
-// Dữ liệu mẫu cho bộ màu C (Ví dụ: dữ liệu về hiệu suất hàng tháng)
-const chartDataC = [
-  { month: "January", desktop: 186, mobile: 80 },
-  { month: "February", desktop: 305, mobile: 200 },
-  { month: "March", desktop: 237, mobile: 120 },
-  { month: "April", desktop: 203, mobile: 190 },
-  { month: "May", desktop: 209, mobile: 130 },
-  { month: "June", desktop: 214, mobile: 140 },
-];
+// Không cần dữ liệu mẫu vì data đã được truyền từ component cha
 
-// Dữ liệu mẫu cho bộ màu D (Ví dụ: dữ liệu về xếp hạng sản phẩm)
-const chartDataD = [
-  { category: "Design", value: 80, average: 65 },
-  { category: "Usability", value: 90, average: 75 },
-  { category: "Performance", value: 70, average: 80 },
-  { category: "Features", value: 95, average: 70 },
-  { category: "Support", value: 85, average: 60 },
-];
+// Hàm chuyển đổi dữ liệu API thành format cho radar chart
+function transformApiDataToChartData(apiData: ConsultationAnalyticsResult) {
+  return apiData.chartData.chartData.map(item => ({
+    month: item.month,
+    phoneCall: item.phoneCall,
+    onlineMeeting: item.onlineMeeting,
+    inPerson: item.inPerson,
+    email: item.email,
+    chat: item.chat,
+  }));
+}
 
-// Hàm để lấy cấu hình biểu đồ và dữ liệu dựa trên colorSet
-function getChartConfigAndData(colorSet: "C" | "D") {
+// Hàm để lấy cấu hình biểu đồ và dữ liệu
+function getChartConfigAndData(colorSet: "C" | "D", apiData?: ConsultationAnalyticsResult) {
   if (colorSet === "C") {
-    const configC = { // Khai báo rõ ràng config cho C
-      desktop: {
-        label: "Desktop Traffic",
-        color: "hsl(var(--chart-C-1))",
-      },
-      mobile: {
-        label: "Mobile Traffic",
-        color: "hsl(var(--chart-C-2))",
-      },
-    } satisfies ChartConfig; // <-- Sử dụng satisfies ChartConfig ở đây
+    // Chỉ sử dụng dữ liệu từ API
+    if (!apiData) {
+      return null; // Trả về null nếu không có data
+    }
+    
+    const chartData = transformApiDataToChartData(apiData);
 
+    const configC = {
+      phoneCall: {
+        label: apiData.chartData.config.phoneCall.label,
+        color: apiData.chartData.config.phoneCall.color,
+      },
+      onlineMeeting: {
+        label: apiData.chartData.config.onlineMeeting.label,
+        color: apiData.chartData.config.onlineMeeting.color,
+      },
+      inPerson: {
+        label: apiData.chartData.config.inPerson.label,
+        color: apiData.chartData.config.inPerson.color,
+      },
+      email: {
+        label: apiData.chartData.config.email.label,
+        color: apiData.chartData.config.email.color,
+      },
+      chat: {
+        label: apiData.chartData.config.chat.label,
+        color: apiData.chartData.config.chat.color,
+      },
+    } satisfies ChartConfig;
+
+    // Xác định trend direction
+    const growthRate = apiData.summary.growthRate;
+    const isPositiveTrend = growthRate.startsWith('+') || !growthRate.startsWith('-');
+    
     return {
-      data: chartDataC,
-      config: configC, // Truyền config C
-      mainDataKey: "desktop",
-      secondDataKey: "mobile",
+      data: chartData,
+      config: configC,
+      dataKeys: ['phoneCall', 'onlineMeeting', 'inPerson', 'email', 'chat'],
       polarAngleAxisDataKey: "month",
-      title: "Radar Chart C - Traffic Overview",
-      description: "Showing total visitors for the last 6 months",
-      trendIcon: <TrendingUp className="h-4 w-4" />,
-      trendText: "Trending up by 5.2% this month",
-      footerText: "January - June 2024",
+      title: "Lượt tư vấn theo hình thức",
+      description: "Phân bố các hình thức tư vấn theo tháng",
+      trendIcon: isPositiveTrend ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />,
+      trendText: `${isPositiveTrend ? 'Tăng' : 'Giảm'} ${growthRate} so với kỳ trước`,
+      footerText: apiData.summary.period,
+      totalConsultations: apiData.summary.totalConsultations,
+      averageDuration: apiData.summary.averageDuration,
     };
   } else { // colorSet === "D"
-    const configD = { // Khai báo rõ ràng config cho D
-      value: {
-        label: "Your Score",
-        color: "hsl(var(--chart-D-1))",
-      },
-      average: {
-        label: "Average Score",
-        color: "hsl(var(--chart-D-2))",
-      },
-    } satisfies ChartConfig; // <-- Sử dụng satisfies ChartConfig ở đây
-
-    return {
-      data: chartDataD,
-      config: configD, // Truyền config D
-      mainDataKey: "value",
-      secondDataKey: "average",
-      polarAngleAxisDataKey: "category",
-      title: "Radar Chart D - Product Ratings",
-      description: "Comparison of product features",
-      trendIcon: <TrendingDown className="h-4 w-4" />,
-      trendText: "Average score decreased by 1.5% this quarter",
-      footerText: "Q1 - Q4 2024",
-    };
+    // Không support colorSet D cho consultations data
+    return null;
   }
 }
 
-export function RadarChartGridCircle({ colorSet, title, description }: RadarChartProps) {
+export function RadarChartGridCircle({ colorSet, title, description, data }: RadarChartProps) {
+  const chartConfig = getChartConfigAndData(colorSet, data);
+
+  // Không render nếu không có data hoặc config
+  if (!chartConfig) {
+    return (
+      <Card>
+        <CardHeader className="items-center pb-4">
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            {title || "Lượt tư vấn theo hình thức"}
+          </CardTitle>
+          <CardDescription>
+            {description || "Đang tải dữ liệu..."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pb-0">
+          <div className="mx-auto aspect-square max-h-[280px] flex items-center justify-center">
+            <p className="text-muted-foreground">Không có dữ liệu</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const {
-    data,
+    data: chartData,
     config,
-    mainDataKey,
-    secondDataKey,
+    dataKeys,
     polarAngleAxisDataKey,
     title: defaultTitle,
     description: defaultDescription,
     trendIcon,
     trendText,
     footerText,
-  } = getChartConfigAndData(colorSet);
+    totalConsultations,
+    averageDuration,
+  } = chartConfig;
 
   return (
     <Card>
       <CardHeader className="items-center pb-4">
-        <CardTitle>{title || defaultTitle}</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <Activity className="h-5 w-5" />
+          {title || defaultTitle}
+        </CardTitle>
         <CardDescription>
           {description || defaultDescription}
         </CardDescription>
+        
+        {/* Hiển thị thống kê tổng quan */}
+        {data && colorSet === "C" && (
+          <div className="flex gap-4 text-sm text-muted-foreground mt-2">
+            <span>Tổng: <strong>{totalConsultations.toLocaleString()}</strong></span>
+            <span>TB: <strong>{averageDuration} phút</strong></span>
+          </div>
+        )}
       </CardHeader>
+      
       <CardContent className="pb-0">
         <ChartContainer
           config={config}
-          className="mx-auto aspect-square max-h-[250px]"
+          className="mx-auto aspect-square max-h-[280px]"
         >
-          <RadarChart data={data}>
+          <RadarChart data={chartData}>
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent hideLabel />}
+              content={<ChartTooltipContent 
+                hideLabel={false}
+                labelKey={polarAngleAxisDataKey}
+                formatter={(value, name) => [
+                  value,
+                  config[name as keyof typeof config]?.label || name
+                ]}
+              />}
             />
-            <PolarGrid gridType="circle" radialLines={false} />
-            <PolarAngleAxis dataKey={polarAngleAxisDataKey} />
-
-            <Radar
-              dataKey={mainDataKey}
-              fill={`hsl(var(--chart-${colorSet}-1))`}
-              fillOpacity={0.6}
-              dot={{
-                r: 4,
-                fillOpacity: 1,
-              }}
+            <PolarGrid gridType="polygon" />
+            <PolarAngleAxis 
+              dataKey={polarAngleAxisDataKey} 
+              className="text-xs"
             />
 
-            {secondDataKey && (
+            {/* Render tất cả các data keys */}
+            {dataKeys.map((key, index) => (
               <Radar
-                dataKey={secondDataKey}
-                fill={`hsl(var(--chart-${colorSet}-2))`}
-                fillOpacity={0.6}
+                key={key}
+                dataKey={key}
+                stroke={config[key as keyof typeof config]?.color}
+                fill={config[key as keyof typeof config]?.color}
+                fillOpacity={0.1 + (index * 0.1)} // Tăng dần opacity
+                strokeWidth={2}
                 dot={{
-                  r: 4,
+                  r: 3,
                   fillOpacity: 1,
                 }}
               />
-            )}
+            ))}
           </RadarChart>
         </ChartContainer>
       </CardContent>
+      
       <CardFooter className="flex-col gap-2 text-sm">
         <div className="flex items-center gap-2 font-medium leading-none">
           {trendText} {trendIcon}
@@ -163,6 +207,13 @@ export function RadarChartGridCircle({ colorSet, title, description }: RadarChar
         <div className="flex items-center gap-2 leading-none text-muted-foreground">
           {footerText}
         </div>
+        
+        {/* Hiển thị trending text từ API */}
+        {data?.summary.trendingText && (
+          <div className="text-xs text-center text-muted-foreground border-t pt-2 mt-1">
+            {data.summary.trendingText}
+          </div>
+        )}
       </CardFooter>
     </Card>
   )
