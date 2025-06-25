@@ -14,6 +14,7 @@ import { UploadFormController } from './controllers/uploadfile.controller';
 import { ConsultingInformationManagementController } from './controllers/consulting-information-management.controller';
 import { AuthController } from './controllers/auth.controller';
 import { DashboardAnalyticsController } from './controllers/consultation-session.controller';
+import { ExportController } from './controllers/sendexcel.controller'; // ✅ Import controller
 
 const host = process.env.HOST ?? 'localhost';
 const port = Number(process.env.PORT ?? 3000);
@@ -46,6 +47,7 @@ const app: Express = createExpressServer({
     AuthController,
     UploadFormController,
     DashboardAnalyticsController,
+    ExportController,
   ],
   defaultErrorHandler: false,
 });

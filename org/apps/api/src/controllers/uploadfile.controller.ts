@@ -1,7 +1,10 @@
 import { JsonController, Post, Get, Body } from 'routing-controllers';
 import jsend from '../jsend';
 import { SendEmail } from '../services/Auto-send-email';
-import { getAllStudentsOnly } from '../services/data.service';
+import {
+  getAllStudentsOnly,
+  getCountIdStudent,
+} from '../services/data.service';
 
 interface FormData {
   student_name: string;
@@ -65,7 +68,7 @@ export class UploadFormController {
       });
     } else {
       // Giả sử getMax lấy max id, tạm set = 1
-      const getMax = 1;
+      const getMax = await getCountIdStudent();
       const countId = (getMax ?? 0) + 1;
 
       // Xử lý highschool
@@ -85,6 +88,12 @@ export class UploadFormController {
         notification_consent = 'Agree';
       } else if (formData.notification_consent === 'Khác') {
         notification_consent = 'Other';
+      }
+
+      let fsource = formData.source;
+
+      if (fsource === 'Khác') {
+        fsource = 'Other';
       }
 
       const inputData = [
@@ -111,7 +120,7 @@ export class UploadFormController {
             !formData.city || formData.city.trim() === ''
               ? 'Null'
               : formData.city,
-          source: formData.source ?? 'Null',
+          source: fsource ?? 'Null',
           other_source_description: formData.other_source_description ?? 'Null',
           notification_consent: notification_consent,
           other_notification_consent_description:
