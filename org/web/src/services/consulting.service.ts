@@ -1,5 +1,8 @@
 import apiClient from '@/lib/axios.lib';
-import { ConsultingApiResponseHistory, consultingApiResponseSchemaHistory } from '@/lib/schema/consulting-data-history';
+import {
+  ConsultingApiResponseHistory,
+  consultingApiResponseSchemaHistory,
+} from '@/lib/schema/consulting-data-history';
 import { ConsultingApiResponse } from '@/lib/schema/consulting-data-schema';
 
 export const consultingService = {
@@ -171,15 +174,14 @@ export const consultingService = {
     }
   },
 
-  async getConsultingInformationHistoryByConselorId( 
+  async getConsultingInformationHistoryByConselorId(
     page: number = 1,
     limit: number = 10
   ): Promise<ConsultingApiResponseHistory> {
     try {
-
       const response = await apiClient.get(
         // Thay đổi URL để bao gồm counselorId trong path
-        `/consulting-information-management/history`, 
+        `/consulting-information-management/history`,
         {
           params: {
             page: page,

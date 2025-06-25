@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = "mysql://root@localhost:3306/dbctu"
+  url      = "mysql://root@localhost:3306/cusc_student_management"
 }
 
 model users {

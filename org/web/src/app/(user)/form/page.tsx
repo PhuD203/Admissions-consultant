@@ -221,65 +221,31 @@ const RegistrationForm: React.FC = () => {
 
     //-------------------------------------------------------
     // Code API gửi mail tự động
-    fetch('http://localhost:3000/api/uploadform/sendemail', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        to: formData.email,
-        subject: 'Cảm ơn bạn đã liên hệ với CUSC',
-        text: `Chào ${formData.fullName},
-
-    CUSC xin chân thành cảm ơn bạn đã quan tâm và liên hệ với các khóa học của trung tâm.
-
-    Chúng tôi đã nhận được yêu cầu của bạn và sẽ liên hệ lại trong thời gian sớm nhất trong khung giờ làm việc của trung tâm. Mong bạn vui lòng chú ý điện thoại và email để nhận được thông tin hỗ trợ nhanh chóng.
-
-    Ngoài ra, bạn có thể liên hệ với chúng tôi qua Zalo để được tư vấn nhanh hơn.
-
-    CUSC trân trọng cảm ơn.`,
-        html: `
-          <!DOCTYPE html>
-          <html lang="vi">
-          <head>
-            <meta charset="UTF-8" />
-            <title>Thư cảm ơn từ CUSC</title>
-          </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-            <p>Chào <strong>${formData.fullName}</strong>,</p>
-
-            <p>
-              CUSC xin chân thành cảm ơn bạn đã quan tâm và liên hệ với các khóa học của trung tâm.
-            </p>
-
-            <p>
-              Chúng tôi đã nhận được yêu cầu của bạn và sẽ liên hệ lại trong thời gian sớm nhất trong khung giờ làm việc của trung tâm. Mong bạn vui lòng chú ý điện thoại và email để nhận được thông tin hỗ trợ nhanh chóng.
-            </p>
-
-            <p>
-              Ngoài ra, bạn có thể liên hệ với chúng tôi qua Zalo để được tư vấn nhanh hơn.
-            </p>
-     <img
-              src="https://yu.ctu.edu.vn/images/upload/article/2020/03/0305-logo-ctu.png"
-              alt="Logo CUSC"
-              style="margin-top: 20px; width: 200px; display: block;"
-            />
-            <p>
-              CUSC trân trọng cảm ơn.
-            </p>
-
-          </body>
-          </html>
-        `,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.message) {
-          console.log('Success:', data.message);
-        } else if (data.error) {
-          console.error('Error:', data.error);
+    try {
+      const emailResponse = await fetch(
+        'http://localhost:3000/api/uploadform/sendemail',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: formData.email,
+            subject: 'Cảm ơn bạn đã liên hệ với CUSC',
+            text: `Chào ${formData.fullName}, ...`,
+            html: `<html>...</html>`,
+          }),
         }
-      })
-      .catch((err) => console.error('Fetch error:', err));
+      );
+
+      const emailCheck = await emailResponse.json();
+
+      if (!emailResponse.ok) {
+        throw new Error(emailCheck.error || 'Lỗi gửi email');
+      }
+
+      console.log('Email sent:', emailCheck.message);
+    } catch (err) {
+      console.error('Gửi email thất bại:', err);
+    }
 
     //-------------------------------------------------
     // API gửi trả API giới tính từ tên (tự xây dựng bẳng máy học)
@@ -325,7 +291,7 @@ const RegistrationForm: React.FC = () => {
     // API gửi data đên BE
     const now = new Date();
     try {
-      const response = await fetch(
+      const submitResponse = await fetch(
         'http://localhost:3000/api/uploadform/submitform',
         {
           method: 'POST',
@@ -335,7 +301,7 @@ const RegistrationForm: React.FC = () => {
           body: JSON.stringify({
             student_name: formData.fullName,
             date_of_birth: formData.dob,
-            gender: formData.gender === '' ? gender : formData.gender,
+            gender: formData.gender || gender,
             email: formData.email,
             phone_number: formData.phoneNumber,
             zalo_phone: formData.zaloPhoneNumber,
@@ -347,7 +313,7 @@ const RegistrationForm: React.FC = () => {
             source: formData.infoSources,
             other_source_description: formData.otherInfoSource,
             registration_date: now.toLocaleString(),
-            interested_courses_details: courseName + '___' + className,
+            interested_courses_details: `${courseName}___${className}`,
             notification_consent: formData.notificationConsent,
             other_notification_consent_description:
               formData.otherNotificationConsent,
@@ -355,19 +321,25 @@ const RegistrationForm: React.FC = () => {
         }
       );
 
-      if (!response.ok) {
-        throw new Error('Lỗi khi gửi dữ liệu');
+      const result = await submitResponse.json();
+
+      if (!submitResponse.ok) {
+        throw new Error(result?.error || 'Lỗi khi gửi dữ liệu');
       }
-      const result = await response.json();
+
+      console.log('Phản hồi từ server:', result);
       setShow({
         visible: true,
         message: '✅ Đã đăng ký thành công',
         errors: true,
       });
-
-      console.log('Phản hồi từ server:', result);
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error('Đăng ký thất bại:', err);
+      setShow({
+        visible: true,
+        message: '❌ Gửi đăng ký thất bại. Vui lòng thử lại sau!',
+        errors: false,
+      });
     }
   };
 

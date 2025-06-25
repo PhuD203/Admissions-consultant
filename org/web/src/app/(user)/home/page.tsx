@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 
 import React, { useState, useEffect } from 'react'; // Bắt buộc phải import useState
 // import data from './data.json';
-import { fetchCourseCategories, data } from './data';
+import { fetchCourseCategories, CourseCategory } from './data';
 
 export default function AboutPage() {
   const router = useRouter();
@@ -19,7 +19,7 @@ export default function AboutPage() {
     setOpenId(openId === id ? null : id);
   };
 
-  const [data, setData] = useState<data[]>([]);
+  const [data, setData] = useState<CourseCategory[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

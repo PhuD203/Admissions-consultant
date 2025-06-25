@@ -1,13 +1,7 @@
-import {
-  JsonController,
-  Post,
-  Get,
-  Body,
-  UseBefore,
-} from 'routing-controllers';
-import { DuplicateCheckMiddleware } from '../middlewares/duplicateChecker';
+import { JsonController, Post, Get, Body } from 'routing-controllers';
 import jsend from '../jsend';
 import { SendEmail } from '../services/Auto-send-email';
+import { getAllStudentsOnly } from '../services/data.service';
 
 interface FormData {
   student_name: string;
@@ -26,78 +20,116 @@ interface FormData {
   notification_consent?: string;
   other_notification_consent_description?: string | null;
   registration_date: string;
+  interested_courses_details: string;
 }
 
 @JsonController('/uploadform')
 export class UploadFormController {
   @Post('/submitform')
-  @UseBefore(DuplicateCheckMiddleware)
   async submitForm(@Body() formData: FormData) {
-    // Giả sử getMax lấy max id, tạm set = 1
-    const getMax = 1;
-    const countId = (getMax ?? 0) + 1;
-
-    // Xử lý highschool
-    let highschool = formData.high_school_name ?? '';
-    if (
-      formData.current_education_level.includes('Học sinh THPT') ||
-      formData.current_education_level.includes('Sinh viên')
-    ) {
-      highschool = 'Đã tốt nghiệp';
-    } else if (highschool.trim() === '') {
-      highschool = 'Null';
+    if (!formData?.interested_courses_details || !formData?.registration_date) {
+      return jsend.error('Thiếu thông tin bắt buộc');
     }
 
-    // Xử lý notification_consent
-    let notification_consent = '';
-    if (formData.notification_consent === 'Đồng ý') {
-      notification_consent = 'Agree';
-    } else if (formData.notification_consent === 'Khác') {
-      notification_consent = 'Other';
-    }
+    const parts = formData.interested_courses_details.split('___');
+    if (parts.length < 2) return jsend.error('Thiếu trường bắt buộc');
 
-    const inputData = [
-      {
-        id: countId,
-        student_name: formData.student_name,
-        email: formData.email,
-        phone_number: formData.phone_number,
-        zalo_phone:
-          !formData.zalo_phone || formData.zalo_phone.trim() === ''
-            ? formData.phone_number
-            : formData.zalo_phone,
-        link_facebook:
-          !formData.link_facebook || formData.link_facebook.trim() === ''
-            ? 'Null'
-            : formData.link_facebook,
-        date_of_birth: formData.date_of_birth,
-        gender: formData.gender ?? 'Null',
-        current_education_level: formData.current_education_level,
-        other_education_level_description:
-          formData.other_education_level_description ?? 'Null',
-        high_school_name: highschool,
-        city:
-          !formData.city || formData.city.trim() === ''
-            ? 'Null'
-            : formData.city,
-        source: formData.source ?? 'Null',
-        other_source_description: formData.other_source_description ?? 'Null',
-        notification_consent: notification_consent,
-        other_notification_consent_description:
-          formData.other_notification_consent_description ?? 'Null',
-        current_status: 'Lead',
-        assigned_counselor_id: 'Null',
-        status_change_date: 'Null',
-        registration_date: formData.registration_date,
-        created_at: 'Null',
-        updated_at: 'Null',
-      },
-    ];
+    const dateStr = formData.registration_date.split(' ')[1];
+    if (!dateStr) return jsend.error('Thiếu trường bắt buộc');
 
-    return jsend.success({
-      message: 'Đăng ký thành công',
-      dataReceived: inputData,
+    const [day2, month2, year2] = dateStr.split('/').map(Number);
+    const currentDate = new Date(year2, month2 - 1, day2);
+
+    const students = await getAllStudentsOnly();
+
+    const exists = students.some((item) => {
+      if (!item.registration_date) return false;
+
+      const registrationDate = new Date(item.registration_date);
+      registrationDate.setMonth(registrationDate.getMonth() + 3);
+
+      const diffTime = registrationDate.getTime() - currentDate.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return (
+        removeVietnameseTones(item.student_name) ===
+          removeVietnameseTones(formData.student_name) &&
+        item.email === formData.email &&
+        item.interested_courses_details === parts[1] &&
+        diffDays < 0
+      );
     });
+
+    if (exists) {
+      return jsend.success({
+        message: 'Email đã được gửi',
+      });
+    } else {
+      // Giả sử getMax lấy max id, tạm set = 1
+      const getMax = 1;
+      const countId = (getMax ?? 0) + 1;
+
+      // Xử lý highschool
+      let highschool = formData.high_school_name ?? '';
+      if (
+        formData.current_education_level.includes('Học sinh THPT') ||
+        formData.current_education_level.includes('Sinh viên')
+      ) {
+        highschool = 'Đã tốt nghiệp';
+      } else if (highschool.trim() === '') {
+        highschool = 'Null';
+      }
+
+      // Xử lý notification_consent
+      let notification_consent = '';
+      if (formData.notification_consent === 'Đồng ý') {
+        notification_consent = 'Agree';
+      } else if (formData.notification_consent === 'Khác') {
+        notification_consent = 'Other';
+      }
+
+      const inputData = [
+        {
+          id: countId,
+          student_name: formData.student_name,
+          email: formData.email,
+          phone_number: formData.phone_number,
+          zalo_phone:
+            !formData.zalo_phone || formData.zalo_phone.trim() === ''
+              ? formData.phone_number
+              : formData.zalo_phone,
+          link_facebook:
+            !formData.link_facebook || formData.link_facebook.trim() === ''
+              ? 'Null'
+              : formData.link_facebook,
+          date_of_birth: formData.date_of_birth,
+          gender: formData.gender ?? 'Null',
+          current_education_level: formData.current_education_level,
+          other_education_level_description:
+            formData.other_education_level_description ?? 'Null',
+          high_school_name: highschool,
+          city:
+            !formData.city || formData.city.trim() === ''
+              ? 'Null'
+              : formData.city,
+          source: formData.source ?? 'Null',
+          other_source_description: formData.other_source_description ?? 'Null',
+          notification_consent: notification_consent,
+          other_notification_consent_description:
+            formData.other_notification_consent_description ?? 'Null',
+          current_status: 'Lead',
+          assigned_counselor_id: 'Null',
+          status_change_date: 'Null',
+          registration_date: formData.registration_date,
+          created_at: 'Null',
+          updated_at: 'Null',
+        },
+      ];
+
+      return jsend.success({
+        message: 'Đăng ký thành công',
+        dataReceived: inputData,
+      });
+    }
   }
 
   @Post('/sendemail')
@@ -152,8 +184,68 @@ export class UploadFormController {
           },
         ],
       },
+      {
+        title: 'Khóa đào tạo ngắn hạn',
+        course: [
+          {
+            id: 1,
+            name: 'Khóa học trực tuyến',
+            class: [
+              {
+                name: 'Xây dựng Ứng dụng Web với Node.js và Express.JS Framework',
+              },
+              { name: 'Kiểm thử phần mềm cơ bản, Module 1' },
+              { name: 'Thiết kế Đồ Họa cho Quảng cáo' },
+              { name: 'Quản trị và an ninh mạng' },
+              { name: 'Kiểm thử phần mềm tự động, Module 2' },
+              { name: 'Lập trình ứng dụng đa nền tảng với Flutter' },
+              { name: 'Phát triển ứng dụng Web với LARAVEL và ANGULARJS' },
+              { name: 'Thiết kế Web và lập trình Front-end' },
+              { name: 'Lập trình Back-end với PHP và MySQL' },
+              { name: 'Thiết kế giao diện UI/UX Website bằng Figma' },
+              {
+                name: 'Trí tuệ nhân tạo ứng dụng ghi thanh mang đối tượng có tên name',
+              },
+            ],
+          },
+          {
+            id: 2,
+            name: 'Khóa học trực tiếp',
+            class: [
+              { name: 'Trí tuệ nhân tạo cho nhân viên văn phòng' },
+              { name: 'Thiết kế đồ họa cho quảng cáo' },
+              { name: 'Phân tích dữ liệu thông minh với Power BI và GenAI' },
+            ],
+          },
+        ],
+      },
+      {
+        title: 'Khóa đào tạo STEAM',
+        course: [
+          {
+            id: 1,
+            name: 'Khóa đào tạo STEAM',
+            class: [
+              { name: 'Phát triển tư duy với Python' },
+              { name: 'Phát triển tư duy với lập trình Arduino' },
+              { name: 'Thiết kế web sáng tạo' },
+            ],
+          },
+        ],
+      },
     ];
 
     return coursecategories;
   }
+}
+
+function removeVietnameseTones(str: string): string {
+  return str
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .replace(/\s+/g, ' ')
+    .toLowerCase()
+    .trim();
 }
