@@ -122,3 +122,112 @@ export const getEnrollments = async () => {
     updated_at: e.updated_at,
   }));
 };
+
+export const AddStudent = async (formData: any) => {
+  const student = await prisma.students.create({
+    data: formData,
+  });
+
+  return student;
+};
+
+export const IDisEmailExists = async (
+  email: string
+): Promise<number | null> => {
+  const student = await prisma.students.findFirst({
+    where: { email },
+    select: { id: true },
+  });
+
+  return student?.id ?? null;
+};
+
+export const getDataCourse = async () => {
+  const coursecategoriesRaw = await prisma.coursecategories.findMany({
+    include: {
+      courses: {
+        orderBy: { id: 'asc' }, // optional: sắp xếp theo ID
+      },
+    },
+  });
+  return coursecategoriesRaw;
+};
+
+export const getInfoCourse = async (courseName: string) => {
+  const course = await prisma.courses.findFirst({
+    where: { name: courseName },
+    select: {
+      id: true,
+      program_type: true,
+    },
+  });
+  return course; // course có thể là null nếu không tìm thấy
+};
+
+export const addStudentInterestedCourse = async (data: {
+  studentId: number;
+  courseId: number;
+  interestDate?: Date;
+  notes?: string | null;
+}) => {
+  const { studentId, courseId, interestDate, notes = null } = data;
+
+  try {
+    const result = await prisma.student_interested_courses.create({
+      data: {
+        student_id: studentId,
+        course_id: courseId,
+        ...(interestDate && { interest_date: interestDate }),
+        notes: notes, // nếu không truyền notes thì là null
+      },
+    });
+    return result;
+  } catch (error) {
+    console.error('Error adding student interested course:', error);
+    throw error;
+  }
+};
+
+export const getUser = async (programType: string) => {
+  if (programType === 'Short_term___Steam') {
+    programType = 'SHORT-TERM + STEAM';
+  }
+  const result = await prisma.$queryRaw<
+    Array<{ id: number; full_name: string; student_count: number }>
+  >`
+    SELECT u.id, u.full_name, COUNT(s.id) AS student_count
+    FROM users u
+    LEFT JOIN students s ON u.id = s.assigned_counselor_id
+    WHERE u.program_type = ${programType}
+    GROUP BY u.id
+    ORDER BY student_count ASC
+    LIMIT 1
+  `;
+
+  const raw = result[0];
+  if (!raw) return null;
+
+  // ✅ Ép kiểu BigInt -> number
+  return {
+    id: Number(raw.id),
+    full_name: raw.full_name,
+    student_count: Number(raw.student_count),
+  };
+};
+
+export const isStudentInterestedCourseExists = async (
+  studentId: number,
+  courseId: number
+) => {
+  const existing = await prisma.student_interested_courses.findUnique({
+    where: {
+      student_id_course_id: {
+        student_id: studentId,
+        course_id: courseId,
+      },
+    },
+    select: { student_id: true }, // chỉ cần 1 field nhỏ nhất
+  });
+
+  return !!existing; // trả về true nếu tồn tại, false nếu không
+};

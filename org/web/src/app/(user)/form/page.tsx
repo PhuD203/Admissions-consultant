@@ -208,14 +208,12 @@ const RegistrationForm: React.FC = () => {
     //---------------------------------------------------------------
     //Code Lấy Khóa học đăng ký tư vấn
     let courseName = '';
-    let className = '';
     if (typeof window !== 'undefined') {
       const savedDataString = localStorage.getItem('formData');
 
       if (savedDataString) {
         const savedData = JSON.parse(savedDataString); // parse JSON thành object
         courseName = savedData.courseName;
-        className = savedData.className;
       }
     }
 
@@ -313,7 +311,7 @@ const RegistrationForm: React.FC = () => {
             source: formData.infoSources,
             other_source_description: formData.otherInfoSource,
             registration_date: now.toLocaleString(),
-            interested_courses_details: `${courseName}___${className}`,
+            interested_courses_details: `${courseName}`,
             notification_consent: formData.notificationConsent,
             other_notification_consent_description:
               formData.otherNotificationConsent,
@@ -510,28 +508,26 @@ const RegistrationForm: React.FC = () => {
           </label>
 
           <div
-            className={`space-y-2 space-x-3 border rounded max-w-120 p-2 pl-3 pb-1 ${
+            className={`space-y-2 space-x-3 border rounded max-w-90 p-2 pl-3 pb-1 ${
               errors.userType ? 'border-red-500' : 'border-gray-300'
             }`}
           >
-            {['Học sinh THPT', 'Sinh viên', 'Người đi làm', 'Mục khác'].map(
-              (option) => (
-                <label
-                  key={option}
-                  className="inline-flex items-center space-x-2"
-                >
-                  <input
-                    type="radio"
-                    name="userType"
-                    value={option}
-                    checked={formData.userType === option}
-                    onChange={handleChange}
-                    className="form-radio"
-                  />
-                  <span>{option}</span>
-                </label>
-              )
-            )}
+            {['Học sinh THPT', 'Sinh viên', 'Mục khác'].map((option) => (
+              <label
+                key={option}
+                className="inline-flex items-center space-x-2"
+              >
+                <input
+                  type="radio"
+                  name="userType"
+                  value={option}
+                  checked={formData.userType === option}
+                  onChange={handleChange}
+                  className="form-radio"
+                />
+                <span>{option}</span>
+              </label>
+            ))}
           </div>
           {formData.userType === 'Mục khác' && (
             <input

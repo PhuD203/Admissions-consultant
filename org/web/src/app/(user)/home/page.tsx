@@ -1,24 +1,14 @@
 'use client';
 
-// Trong component
 import { useRouter } from 'next/navigation';
-
-import React, { useState, useEffect } from 'react'; // Bắt buộc phải import useState
-// import data from './data.json';
+import React, { useState, useEffect } from 'react';
 import { fetchCourseCategories, CourseCategory } from './data';
 
 export default function AboutPage() {
   const router = useRouter();
   const [openId, setOpenId] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [openClassId, setOpenClassId] = useState<string | null>(null);
-  const [isCourseOpen, setIsCourseOpen] = useState(false);
-
-  const toggleMenu = () => setIsOpen(!isOpen);
-  const toggle = (id: string) => {
-    setOpenId(openId === id ? null : id);
-  };
-
+  const [openCourseId, setOpenCourseId] = useState<string | null>(null);
   const [data, setData] = useState<CourseCategory[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -36,6 +26,11 @@ export default function AboutPage() {
     loadData();
   }, []);
 
+  const toggleMenu = () => setIsOpen(!isOpen);
+  const toggleCourse = (id: string) => {
+    setOpenCourseId(openCourseId === id ? null : id);
+  };
+
   return (
     <div className="bg-gray-50">
       <div className="max-w-4xl mx-auto border-gray-400">
@@ -46,77 +41,53 @@ export default function AboutPage() {
           >
             ☰ Menu
           </button>
-          {/* Thanh menu*/}
+
           <nav
-            className={`${
-              isOpen ? 'block' : 'hidden'
-            }  flex flex-col fixed top-0 gap-5 sm:gap-2 pt-20 h-full w-64 bg-white p-6 z-40 shadow-lg sm:inline-flex sm:fixed  sm:h-8 sm:flex-row sm:static sm:top-0  sm:w-auto  sm:border-2 sm:border-gray-400 sm:rounded-bl-xl sm:rounded-br-xl sm:bg-gray-100 sm:text-gray-800 sm:z-50 sm:shadow-lg sm:p-0 `}
+            className={`$
+              {isOpen ? 'block' : 'hidden'} flex flex-col fixed top-0 gap-5 sm:gap-2 pt-20 h-full w-64 bg-white p-6 z-40 shadow-lg text-lg sm:inline-flex sm:fixed sm:h-8 sm:flex-row sm:static sm:top-0 sm:w-auto sm:border-2 sm:border-gray-400 sm:rounded-bl-xl sm:rounded-br-xl sm:bg-gray-100 sm:text-gray-800 sm:z-50 sm:shadow-lg sm:p-0`}
           >
-            <a
-              href=""
-              className="text-gray-600 pl-1 sm:pl-2 pr-1 sm:hover:text-white sm:hover:bg-blue-500 sm:hover:rounded-bl-xl hover:scale-110 hover:text-blue-600 "
-            >
+            <a href="#" className="text-gray-600 hover:text-blue-600">
               Trang chủ
             </a>
-            <a
-              href="#"
-              className="text-gray-600  pl-1 pr-1 sm:hover:text-white sm:hover:bg-blue-500 hover:scale-110 hover:text-blue-600"
-            >
+            <a href="#" className="text-gray-600 hover:text-blue-600">
               Giới thiệu
             </a>
-            <a
-              href="#"
-              className="text-gray-600  pl-1  pr-1 sm:hover:text-white sm:hover:bg-blue-500 hover:scale-110 hover:text-blue-600"
-            >
+            <a href="#" className="text-gray-600 hover:text-blue-600">
               Liên hệ
             </a>
-            <a
-              href="#"
-              className="text-gray-600 pl-1 pr-1 sm:hover:text-white sm:hover:bg-blue-500 hover:scale-110 hover:text-blue-600"
-            >
-              Đăng ký khóa học
+            <a href="#" className="text-gray-600 hover:text-blue-600">
+              Tham quan CUSC
             </a>
-            <a
-              href="#"
-              className="text-gray-600 pl-1 pr-2 sm:hover:text-white sm:hover:bg-blue-500 sm:hover:rounded-br-xl hover:scale-110 hover:text-blue-600"
-            >
+            <a href="#" className="text-gray-600 hover:text-blue-600">
               Đăng nhập
             </a>
           </nav>
-          {/* Phần tiêu đề với ảnh và chữ */}
-          <section className="flex items-center gap-10 bg-aqua mb-3 p-6 border border-gray-400 rounded-md max-w-4xl mx-auto justify-between">
-            <a href="#">
-              <img
-                src="https://yu.ctu.edu.vn/images/upload/article/2020/03/0305-logo-ctu.png"
-                alt="Ảnh 1"
-                className="h-28 object-cover rounded"
-              />
-            </a>
 
-            <div className="text-center flex flex-col justify-center flex-1 hidden sm:block">
+          <section className="flex items-center gap-10 bg-aqua mb-3 p-6 border border-gray-400 rounded-md max-w-4xl mx-auto justify-between">
+            <img
+              src="https://yu.ctu.edu.vn/images/upload/article/2020/03/0305-logo-ctu.png"
+              className="h-28"
+            />
+            <div className="text-center flex-1 hidden sm:block">
               <p className="text-blue-700 font-semibold text-xl pb-3">
                 TRUNG TÂM CÔNG NGHỆ PHẦN MỀM ĐẠI HỌC CẦN THƠ
               </p>
               <p className="text-brown-600 text-lg">TƯ VẤN TUYỂN SINH</p>
             </div>
-
-            <div>
-              <img
-                src="https://aptechcantho.cusc.vn/DesktopModules/CMSP/HinhDaiDien2/1/20181031cusc.png"
-                alt="Ảnh 2"
-                className="h-32 object-cover rounded"
-              />
-            </div>
+            <img
+              src="https://aptechcantho.cusc.vn/DesktopModules/CMSP/HinhDaiDien2/1/20181031cusc.png"
+              className="h-32"
+            />
           </section>
 
-          <section className="overflow-hidden bg-gradient-to-r from-blue-200 via-blue-200 to-blue-200 pt-6 pr-6 pl-6 rounded-t-lg shadow-lg text-black font-semibold leading-relaxed tracking-wide border border-gray-400">
+          <section className="bg-gradient-to-r from-blue-200 via-blue-200 to-blue-200 pt-6 pr-6 pl-6 rounded-t-lg shadow-lg text-black font-semibold border border-gray-400">
             <div>
               Trung tâm CUSC – Đào tạo CNTT chất lượng cao & tư vấn tuyển sinh
               <div>
-                Trung tâm hoạt động từ <strong>thứ Hai </strong>đến{' '}
-                <strong>thứ Sáu</strong> hàng tuần:
+                Trung tâm hoạt động từ <strong>thứ Hai</strong> đến{' '}
+                <strong>thứ Sáu</strong>:
               </div>
-              <ul className="list-disc list-inside mt-2 mb-2 space-y-1 pl-8">
+              <ul className="list-disc list-inside mt-2 mb-2 pl-8">
                 <li>
                   Buổi sáng: từ <strong>7h00</strong> đến <strong>11h00</strong>
                 </li>
@@ -131,137 +102,99 @@ export default function AboutPage() {
             </div>
           </section>
 
-          {/* Danh sách các mục */}
-          <section className="max-w-4xl mx-auto border  ">
-            <div className="max-w-4xl mx-auto bg-neutral-50 border border-gray-400  shadow-md font-sans">
-              {data.map((item, itemIndex) => (
-                <div key={itemIndex} className="mb-8">
-                  <h2 className="font-extrabold text-2xl pb-3 border-b border-gray-300 px-6 pt-6">
-                    {item.title}
-                  </h2>
+          <section className="max-w-4xl mx-auto divide-y border rounded-md bg-white shadow-sm">
+            {data.map((category) => (
+              <div key={category.id}>
+                <details className="group">
+                  <summary className="cursor-pointer bg-gray-200 hover:bg-blue-200 px-4 py-3 font-semibold text-base sm:text-lg text-black transition rounded-t">
+                    {category.name}
+                  </summary>
 
-                  {item.course && item.course.length > 0 ? (
-                    item.course.map((courseItem, courseIndex) => {
-                      const uniqueClassId = `${courseItem.id}-${courseItem.name}`;
-                      const isOpen = openId === uniqueClassId;
+                  <div className="bg-blue-50 px-4 py-4 space-y-4">
+                    {category.courses && category.courses.length > 0 ? (
+                      category.courses.map((course) => {
+                        const courseIdStr = String(course.id);
+                        const isOpen = openCourseId === courseIdStr;
 
-                      return (
-                        <div
-                          key={uniqueClassId}
-                          className="mb-6 mt-6 ml-8 rounded-md bg-blue-100 p-4 shadow-sm hover:shadow-md transition-shadow duration-300 mr-6"
-                        >
-                          <p
-                            className="flex items-center gap-3 cursor-pointer select-none font-semibold  font-bold text-lg	 text-blue-900 hover:text-red-900 "
-                            onClick={() =>
-                              setOpenId(isOpen ? null : uniqueClassId)
-                            }
-                            aria-expanded={isOpen}
+                        return (
+                          <div
+                            key={course.id}
+                            className={`rounded-md shadow-sm transition-all border-l-4 ${
+                              isOpen
+                                ? 'border-blue-700 bg-blue-100'
+                                : 'border-gray-200 bg-white'
+                            }`}
                           >
-                            <span className="text-5xl font-bold"></span>
-                            {courseItem.name}
-                            <svg
-                              className={`w-5 h-5 ml-auto transition-transform duration-300 ${
-                                isOpen ? 'rotate-90' : 'rotate-0'
-                              }`}
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              viewBox="0 0 24 24"
-                              xmlns="http://www.w3.org/2000/svg"
-                              aria-hidden="true"
+                            <button
+                              onClick={() => toggleCourse(courseIdStr)}
+                              className={`w-full text-left font-medium px-4 py-3 flex items-center justify-between transition ${
+                                isOpen ? 'text-black' : 'text-black'
+                              } hover:text-blue-600`}
                             >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M9 5l7 7-7 7"
-                              ></path>
-                            </svg>
-                          </p>
+                              <span>{course.name}</span>
+                              <span
+                                className={`transform transition-transform ${
+                                  isOpen ? 'rotate-90' : ''
+                                }`}
+                              ></span>
+                            </button>
 
-                          {isOpen && (
-                            <div className="px-6 mt-3">
-                              <ul className="list-disc list-inside list-none text-gray-700 space-y-2 ">
-                                {courseItem.class &&
-                                courseItem.class.length > 0 ? (
-                                  courseItem.class.map(
-                                    (classItem, classIndex) => {
-                                      const uniqueClassId = `${itemIndex}-${courseIndex}-${classIndex}`;
-                                      const isClassOpen =
-                                        openClassId === uniqueClassId;
+                            {isOpen && (
+                              <div className="px-6 pb-4">
+                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+                                  {/* Nội dung bên trái */}
+                                  <div className="space-y-2 text-sm text-gray-700">
+                                    <p>
+                                      <strong>Hệ:</strong> {course.program_type}
+                                    </p>
+                                    {course.duration && (
+                                      <p>
+                                        <strong>Thời lượng:</strong>{' '}
+                                        {course.duration}
+                                      </p>
+                                    )}
+                                  </div>
 
-                                      return (
-                                        <li
-                                          key={uniqueClassId}
-                                          className="border-b border-gray-800 pb-3 pl-4"
-                                        >
-                                          <div className="flex items-center justify-between">
-                                            <span
-                                              className="cursor-pointer text-base	hover:text-blue-600 font-medium"
-                                              onClick={() =>
-                                                setOpenClassId(
-                                                  isClassOpen
-                                                    ? null
-                                                    : uniqueClassId
-                                                )
-                                              }
-                                            >
-                                              {classItem.name}
-                                            </span>
-
-                                            {isClassOpen && (
-                                              <button
-                                                className="ml-4 bg-blue-600 text-white font-semibold px-4 py-2 rounded hover:bg-blue-700 transition"
-                                                aria-label={`Đăng ký tư vấn lớp ${classItem.name}`}
-                                                onClick={() => {
-                                                  sessionStorage.setItem(
-                                                    'fromHome',
-                                                    'true'
-                                                  );
-                                                  localStorage.setItem(
-                                                    'formData',
-                                                    JSON.stringify({
-                                                      className: classItem.name,
-                                                      courseName:
-                                                        courseItem.name,
-                                                      title: item.title,
-                                                    })
-                                                  );
-                                                  router.replace('/form'); // ← Lưu lịch sử
-                                                }}
-                                              >
-                                                Đăng ký tư vấn
-                                              </button>
-                                            )}
-                                          </div>
-                                        </li>
-                                      );
-                                    }
-                                  )
-                                ) : (
-                                  <li className="italic text-gray-500">
-                                    Không có thông tin lớp học.
-                                  </li>
-                                )}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <p className="px-6 py-4 text-gray-600 italic">
-                      Chưa có khóa học nào.
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
+                                  {/* Nút bên phải */}
+                                  <div className="mt-3 sm:mt-0 shrink-0">
+                                    <button
+                                      className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded hover:bg-blue-700 transition"
+                                      onClick={() => {
+                                        sessionStorage.setItem(
+                                          'fromHome',
+                                          'true'
+                                        );
+                                        localStorage.setItem(
+                                          'formData',
+                                          JSON.stringify({
+                                            courseName: course.name,
+                                          })
+                                        );
+                                        router.replace('/form');
+                                      }}
+                                    >
+                                      Đăng ký tư vấn
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <p className="italic text-gray-500">
+                        Chưa có khóa học nào.
+                      </p>
+                    )}
+                  </div>
+                </details>
+              </div>
+            ))}
           </section>
 
-          {/* Phần trống có thể thêm nội dung */}
           <section className="max-w-4xl border mx-auto rounded-b-md border-gray-400 bg-gradient-to-r from-blue-200 via-blue-200 to-blue-200">
-            <footer className="  mb-3  w-full p-6 flex flex-col sm:flex-row gap-6 sm:space-x-16 text-gray-600 text-sm">
-              {/* Phần thông tin liên hệ bên trái */}
+            <footer className="mb-3 w-full p-6 flex flex-col sm:flex-row gap-6 sm:space-x-16 text-gray-600 text-sm">
               <div className="bg-gray-200 p-4 rounded-md shadow-sm max-w-full sm:max-w-xs flex-shrink-0">
                 <p className="font-semibold text-gray-800 mb-2">
                   Trung tâm Công nghệ phần mềm <br /> Đại học Cần Thơ
@@ -277,9 +210,8 @@ export default function AboutPage() {
                 <p>Điện thoại: +84 292 383 5581</p>
                 <p>Hotline: 0901990665 0911204994</p>
               </div>
-              {/* Phần menu bên phải */}
+
               <div className="flex flex-wrap gap-x-12 gap-y-4 text-gray-600 flex-1 hidden sm:block">
-                {/* Tuyển sinh */}
                 <div>
                   <h3 className="font-semibold text-gray-800 mb-2">
                     Tuyển sinh
@@ -291,7 +223,6 @@ export default function AboutPage() {
                   </ul>
                 </div>
 
-                {/* Chương trình đào tạo */}
                 <div>
                   <h3 className="font-semibold text-gray-800 mb-2 pt-3">
                     Chương trình đào tạo

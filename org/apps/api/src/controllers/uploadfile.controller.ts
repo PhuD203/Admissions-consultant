@@ -2,8 +2,15 @@ import { JsonController, Post, Get, Body } from 'routing-controllers';
 import jsend from '../jsend';
 import { SendEmail } from '../services/Auto-send-email';
 import {
-  getAllStudentsOnly,
+  // getAllStudentsOnly,
   getCountIdStudent,
+  AddStudent,
+  IDisEmailExists,
+  getDataCourse,
+  getInfoCourse,
+  addStudentInterestedCourse,
+  isStudentInterestedCourseExists,
+  getUser,
 } from '../services/data.service';
 
 interface FormData {
@@ -30,74 +37,51 @@ interface FormData {
 export class UploadFormController {
   @Post('/submitform')
   async submitForm(@Body() formData: FormData) {
-    if (!formData?.interested_courses_details || !formData?.registration_date) {
-      return jsend.error('Thiếu thông tin bắt buộc');
-    }
+    try {
+      //Kiem tra da co du lieu hoc sinh trong he thong chua
+      let countId = await IDisEmailExists(formData.email);
+      //Lay thong tin khoa hoc
+      let courseInfo = await getInfoCourse(formData.interested_courses_details);
+      // Lay user thich hop de tu van
+      if (!courseInfo?.program_type) return null; // hoặc throw new Error("Missing program_type");
+      let userId = await getUser(courseInfo.program_type);
 
-    const parts = formData.interested_courses_details.split('___');
-    if (parts.length < 2) return jsend.error('Thiếu trường bắt buộc');
+      if (countId === null) {
+        //Neu chua , them du lieu moi
+        //Tao id moi
+        const getMax = await getCountIdStudent();
+        countId = (getMax ?? 0) + 1;
 
-    const dateStr = formData.registration_date.split(' ')[1];
-    if (!dateStr) return jsend.error('Thiếu trường bắt buộc');
+        //Xu ly current_education_level theo dung mau
+        let current_education_level = formData.current_education_level;
+        if (current_education_level === 'Học sinh THPT') {
+          current_education_level = 'THPT';
+        } else if (current_education_level === 'Sinh viên') {
+          current_education_level = 'SinhVien';
+        } else {
+          current_education_level = 'Other';
+        }
 
-    const [day2, month2, year2] = dateStr.split('/').map(Number);
-    const currentDate = new Date(year2, month2 - 1, day2);
+        // Xử lý notification_consent theo dung mau
+        let notification_consent = '';
+        if (formData.notification_consent === 'Đồng ý') {
+          notification_consent = 'Agree';
+        } else {
+          notification_consent = 'Other';
+        }
 
-    const students = await getAllStudentsOnly();
+        // Xu lu source theo dung mau
+        let fsource = formData.source;
+        if (fsource === 'Khác') {
+          fsource = 'Other';
+        }
+        //Xu ly ngay dang ky theo dung mau
+        const parts = formData.registration_date.split(' ');
+        const [day, month, year] = parts[1].split('/').map(Number);
+        const currentDate = new Date(year, month - 1, day);
+        const curDate = new Date(currentDate);
 
-    const exists = students.some((item) => {
-      if (!item.registration_date) return false;
-
-      const registrationDate = new Date(item.registration_date);
-      registrationDate.setMonth(registrationDate.getMonth() + 3);
-
-      const diffTime = registrationDate.getTime() - currentDate.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return (
-        removeVietnameseTones(item.student_name) ===
-          removeVietnameseTones(formData.student_name) &&
-        item.email === formData.email &&
-        item.interested_courses_details === parts[1] &&
-        diffDays < 0
-      );
-    });
-
-    if (exists) {
-      return jsend.success({
-        message: 'Email đã được gửi',
-      });
-    } else {
-      // Giả sử getMax lấy max id, tạm set = 1
-      const getMax = await getCountIdStudent();
-      const countId = (getMax ?? 0) + 1;
-
-      // Xử lý highschool
-      let highschool = formData.high_school_name ?? '';
-      if (
-        formData.current_education_level.includes('Học sinh THPT') ||
-        formData.current_education_level.includes('Sinh viên')
-      ) {
-        highschool = 'Đã tốt nghiệp';
-      } else if (highschool.trim() === '') {
-        highschool = 'Null';
-      }
-
-      // Xử lý notification_consent
-      let notification_consent = '';
-      if (formData.notification_consent === 'Đồng ý') {
-        notification_consent = 'Agree';
-      } else if (formData.notification_consent === 'Khác') {
-        notification_consent = 'Other';
-      }
-
-      let fsource = formData.source;
-
-      if (fsource === 'Khác') {
-        fsource = 'Other';
-      }
-
-      const inputData = [
-        {
+        const inputData = {
           id: countId,
           student_name: formData.student_name,
           email: formData.email,
@@ -108,36 +92,61 @@ export class UploadFormController {
               : formData.zalo_phone,
           link_facebook:
             !formData.link_facebook || formData.link_facebook.trim() === ''
-              ? 'Null'
+              ? null
               : formData.link_facebook,
-          date_of_birth: formData.date_of_birth,
-          gender: formData.gender ?? 'Null',
-          current_education_level: formData.current_education_level,
+          date_of_birth: formData.date_of_birth
+            ? new Date(formData.date_of_birth)
+            : null,
+          gender: formData.gender?.trim() || null,
+          current_education_level: current_education_level,
           other_education_level_description:
-            formData.other_education_level_description ?? 'Null',
-          high_school_name: highschool,
+            formData.other_education_level_description?.trim() || null,
+          high_school_name: formData.high_school_name,
           city:
             !formData.city || formData.city.trim() === ''
-              ? 'Null'
+              ? null
               : formData.city,
-          source: fsource ?? 'Null',
-          other_source_description: formData.other_source_description ?? 'Null',
+          source: fsource ?? null,
+          other_source_description: formData.other_source_description ?? null,
           notification_consent: notification_consent,
           other_notification_consent_description:
-            formData.other_notification_consent_description ?? 'Null',
+            formData.other_notification_consent_description ?? null,
           current_status: 'Lead',
-          assigned_counselor_id: 'Null',
-          status_change_date: 'Null',
-          registration_date: formData.registration_date,
-          created_at: 'Null',
-          updated_at: 'Null',
-        },
-      ];
+          assigned_counselor_id: userId?.id ?? 1,
+          status_change_date: new Date(),
+          registration_date: curDate,
+          created_at: new Date(),
+          updated_at: new Date(),
+        };
 
+        // Them du lieu moi vao
+        await AddStudent(inputData);
+        await addStudentInterestedCourse({
+          studentId: countId,
+          courseId: courseInfo?.id!,
+          interestDate: new Date(),
+        });
+      } else {
+        //Kiem tra da tung dang ky khoa hoc do chua
+        const Student_CourseExists = await isStudentInterestedCourseExists(
+          countId,
+          courseInfo?.id!
+        );
+
+        if (!Student_CourseExists) {
+          await addStudentInterestedCourse({
+            studentId: countId,
+            courseId: courseInfo?.id!,
+            interestDate: new Date(),
+          });
+        }
+      }
       return jsend.success({
         message: 'Đăng ký thành công',
-        dataReceived: inputData,
       });
+    } catch (error) {
+      console.error('❌ submitForm error:', error);
+      return jsend.error('Đăng ký thất bại. Vui lòng thử lại.');
     }
   }
 
@@ -165,96 +174,36 @@ export class UploadFormController {
     }
   }
 
-  @Get('/Datauser')
-  async getDataUser() {
-    const coursecategories = [
-      {
-        title: 'Khóa đào tạo dài hạn',
-        course: [
-          {
-            id: 1,
-            name: 'Ngành Lập trình viên Quốc tế - Aptech',
-            class: [
-              { name: 'Kỹ sư Kỹ thuật Phần mềm' },
-              { name: 'Kỹ sư Công nghệ thông tin ' },
-              { name: 'Kỹ sư Truyền thông đa phương tiện' },
-              { name: 'Cử nhân Logistics và Quản lý chuỗi cung ứng' },
-            ],
-          },
-          {
-            id: 2,
-            name: 'Ngành Mỹ thuật Đa phương tiện Quốc tế - Arena',
-            class: [
-              { name: 'Kỹ sư Truyền thông Đa phương tiện' },
-              { name: 'Kỹ sư Công nghệ thông tin' },
-              { name: 'Kỹ sư Kỹ thuật Phần mềm' },
-              { name: 'Cử nhân Logistics và Quản lý chuỗi cung ứng' },
-            ],
-          },
-        ],
-      },
-      {
-        title: 'Khóa đào tạo ngắn hạn',
-        course: [
-          {
-            id: 1,
-            name: 'Khóa học trực tuyến',
-            class: [
-              {
-                name: 'Xây dựng Ứng dụng Web với Node.js và Express.JS Framework',
-              },
-              { name: 'Kiểm thử phần mềm cơ bản, Module 1' },
-              { name: 'Thiết kế Đồ Họa cho Quảng cáo' },
-              { name: 'Quản trị và an ninh mạng' },
-              { name: 'Kiểm thử phần mềm tự động, Module 2' },
-              { name: 'Lập trình ứng dụng đa nền tảng với Flutter' },
-              { name: 'Phát triển ứng dụng Web với LARAVEL và ANGULARJS' },
-              { name: 'Thiết kế Web và lập trình Front-end' },
-              { name: 'Lập trình Back-end với PHP và MySQL' },
-              { name: 'Thiết kế giao diện UI/UX Website bằng Figma' },
-              {
-                name: 'Trí tuệ nhân tạo ứng dụng ghi thanh mang đối tượng có tên name',
-              },
-            ],
-          },
-          {
-            id: 2,
-            name: 'Khóa học trực tiếp',
-            class: [
-              { name: 'Trí tuệ nhân tạo cho nhân viên văn phòng' },
-              { name: 'Thiết kế đồ họa cho quảng cáo' },
-              { name: 'Phân tích dữ liệu thông minh với Power BI và GenAI' },
-            ],
-          },
-        ],
-      },
-      {
-        title: 'Khóa đào tạo STEAM',
-        course: [
-          {
-            id: 1,
-            name: 'Khóa đào tạo STEAM',
-            class: [
-              { name: 'Phát triển tư duy với Python' },
-              { name: 'Phát triển tư duy với lập trình Arduino' },
-              { name: 'Thiết kế web sáng tạo' },
-            ],
-          },
-        ],
-      },
-    ];
+  @Get('/DataCourse')
+  async getStaticData() {
+    const coursecategoriesRaw = await getDataCourse();
 
-    return coursecategories;
+    // Định dạng lại coursecategories
+    const coursecategories = coursecategoriesRaw.map((category) => ({
+      id: category.id,
+      name: category.name,
+      description: category.description,
+      courses: category.courses.map((course) => ({
+        id: course.id,
+        name: course.name,
+        program_type: course.program_type,
+        duration: course.duration_text,
+      })),
+    }));
+
+    return jsend.success({
+      coursecategories,
+    });
   }
 }
 
-function removeVietnameseTones(str: string): string {
-  return str
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D')
-    .replace(/\s+/g, ' ')
-    .toLowerCase()
-    .trim();
-}
+// function removeVietnameseTones(str: string): string {
+//   return str
+//     .normalize('NFD')
+//     .replace(/\p{Diacritic}/gu, '')
+//     .replace(/đ/g, 'd')
+//     .replace(/Đ/g, 'D')
+//     .replace(/\s+/g, ' ')
+//     .toLowerCase()
+//     .trim();
+// }

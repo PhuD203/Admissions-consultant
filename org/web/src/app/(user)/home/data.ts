@@ -1,13 +1,12 @@
-// src/lib/api/fetchCourseCategories.ts
-
 export interface CourseCategory {
-  title: string;
-  course?: {
-    id: string;
+  id: number;
+  name: string;
+  description: string;
+  courses: {
+    id: number;
     name: string;
-    class?: {
-      name: string;
-    }[];
+    program_type: string;
+    duration: string;
   }[];
 }
 
@@ -15,17 +14,15 @@ export async function fetchCourseCategories(): Promise<CourseCategory[]> {
   const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
-  const url = `${API_BASE_URL}/api/uploadform/Datauser`;
+  const url = `${API_BASE_URL}/api/uploadform/DataCourse`;
   console.log('[fetchCourseCategories] Fetching from:', url);
 
   try {
     const response = await fetch(url, {
-      // Optional: Thêm header nếu bạn muốn rõ ràng kiểu JSON
       headers: {
         'Content-Type': 'application/json',
       },
-      // Bắt buộc nếu gọi từ server side trong Next.js (App Router)
-      cache: 'no-store', // hoặc 'force-cache', tùy tình huống
+      cache: 'no-store',
     });
 
     if (!response.ok) {
@@ -35,16 +32,18 @@ export async function fetchCourseCategories(): Promise<CourseCategory[]> {
       );
     }
 
-    const data = await response.json();
+    const json = await response.json();
 
-    if (!Array.isArray(data)) {
-      console.error('❌ Unexpected data:', data);
-      throw new Error(
-        '❌ Invalid response format: expected an array of course categories'
-      );
+    // ✅ Kiểm tra dữ liệu theo chuẩn API trả về { status: "success", data: { coursecategories: [...] } }
+    if (
+      json?.status === 'success' &&
+      Array.isArray(json.data?.coursecategories)
+    ) {
+      return json.data.coursecategories as CourseCategory[];
+    } else {
+      console.error('❌ Unexpected JSON structure:', json);
+      throw new Error('❌ Invalid response structure');
     }
-
-    return data as CourseCategory[];
   } catch (error) {
     console.error('[fetchCourseCategories] ERROR:', error);
     throw error;
