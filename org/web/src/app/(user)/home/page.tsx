@@ -44,32 +44,47 @@ export default function AboutPage() {
 
           <nav
             className={`$
-              {isOpen ? 'block' : 'hidden'} flex flex-col fixed top-0 gap-5 sm:gap-2 pt-20 h-full w-64 bg-white p-6 z-40 shadow-lg text-lg sm:inline-flex sm:fixed sm:h-8 sm:flex-row sm:static sm:top-0 sm:w-auto sm:border-2 sm:border-gray-400 sm:rounded-bl-xl sm:rounded-br-xl sm:bg-gray-100 sm:text-gray-800 sm:z-50 sm:shadow-lg sm:p-0`}
+              {isOpen ? 'block' : 'hidden'} flex flex-col fixed top-0 gap-5 sm:px-4 sm:gap-3 pt-20 h-full w-64 bg-white p-6 z-40 shadow-lg text-lg sm:inline-flex sm:fixed sm:h-8 sm:flex-row sm:static sm:top-0 sm:w-auto sm:border-2 sm:border-gray-400 sm:rounded-bl-xl sm:rounded-br-xl sm:bg-gray-100 sm:text-gray-800 sm:z-50 sm:shadow-lg sm:p-0`}
           >
-            <a href="#" className="text-gray-600 hover:text-blue-600">
+            <a
+              href="https://aptechcantho.cusc.vn/"
+              className="text-gray-600 hover:text-blue-600"
+            >
               Trang chủ
             </a>
-            <a href="#" className="text-gray-600 hover:text-blue-600">
+            <a
+              href="https://aptechcantho.cusc.vn/Default.aspx?tabid=121"
+              className="text-gray-600 hover:text-blue-600"
+            >
               Giới thiệu
             </a>
-            <a href="#" className="text-gray-600 hover:text-blue-600">
+            <a
+              href="https://aptechcantho.cusc.vn/Default.aspx?tabid=191"
+              className="text-gray-600 hover:text-blue-600"
+            >
               Liên hệ
             </a>
-            <a href="#" className="text-gray-600 hover:text-blue-600">
+            <a
+              href="https://aptechcantho.cusc.vn/cusctour/"
+              className="text-gray-600 hover:text-blue-600"
+            >
               Tham quan CUSC
             </a>
-            <a href="#" className="text-gray-600 hover:text-blue-600">
+            <a
+              href="https://aptechcantho.cusc.vn/Default.aspx?tabid=191&ctl=Login&returnurl=%2fDefault.aspx%3ftabid%3d191"
+              className="text-gray-600 hover:text-blue-600"
+            >
               Đăng nhập
             </a>
           </nav>
 
-          <section className="flex items-center gap-10 bg-aqua mb-3 p-6 border border-gray-400 rounded-md max-w-4xl mx-auto justify-between">
+          <section className="flex items-center gap-10 bg-aqua mb-3 p-7 border border-gray-400 rounded-md max-w-4xl mx-auto justify-between">
             <img
               src="https://yu.ctu.edu.vn/images/upload/article/2020/03/0305-logo-ctu.png"
               className="h-28"
             />
             <div className="text-center flex-1 hidden sm:block">
-              <p className="text-blue-700 font-semibold text-xl pb-3">
+              <p className="text-blue-700 font-semibold text-2xl pb-3">
                 TRUNG TÂM CÔNG NGHỆ PHẦN MỀM ĐẠI HỌC CẦN THƠ
               </p>
               <p className="text-brown-600 text-lg">TƯ VẤN TUYỂN SINH</p>
@@ -80,7 +95,7 @@ export default function AboutPage() {
             />
           </section>
 
-          <section className="bg-gradient-to-r from-blue-200 via-blue-200 to-blue-200 pt-6 pr-6 pl-6 rounded-t-lg shadow-lg text-black font-semibold border border-gray-400">
+          <section className="bg-gradient-to-r from-blue-200 via-blue-200 to-blue-200 pt-6 pr-6 pl-6 rounded-t-lg shadow-lg text-black font-semibold border border-gray-400 text-lg">
             <div>
               Trung tâm CUSC – Đào tạo CNTT chất lượng cao & tư vấn tuyển sinh
               <div>
@@ -102,11 +117,11 @@ export default function AboutPage() {
             </div>
           </section>
 
-          <section className="max-w-4xl mx-auto divide-y border rounded-md bg-white shadow-sm">
+          <section className="max-w-4xl mx-auto divide-y border rounded-md bg-gray-200 shadow-sm ">
             {data.map((category) => (
               <div key={category.id}>
                 <details className="group">
-                  <summary className="cursor-pointer bg-gray-200 hover:bg-blue-200 px-4 py-3 font-semibold text-base sm:text-lg text-black transition rounded-t">
+                  <summary className="cursor-pointer bg-gray-200 hover:bg-blue-200 px-6 py-3 font-semibold text-base sm:text-lg text-black transition rounded-t ">
                     {category.name}
                   </summary>
 
@@ -128,7 +143,7 @@ export default function AboutPage() {
                             <button
                               onClick={() => toggleCourse(courseIdStr)}
                               className={`w-full text-left font-medium px-4 py-3 flex items-center justify-between transition ${
-                                isOpen ? 'text-black' : 'text-black'
+                                isOpen ? 'text-black' : 'text-gray-800'
                               } hover:text-blue-600`}
                             >
                               <span>{course.name}</span>
@@ -189,6 +204,9 @@ export default function AboutPage() {
                     )}
                   </div>
                 </details>
+                <div className="text-center">
+                  <div className="w-200 h-1 border-b border-gray-500 mx-auto mt-1"></div>
+                </div>
               </div>
             ))}
           </section>
@@ -211,30 +229,50 @@ export default function AboutPage() {
                 <p>Hotline: 0901990665 0911204994</p>
               </div>
 
-              <div className="flex flex-wrap gap-x-12 gap-y-4 text-gray-600 flex-1 hidden sm:block">
+              <div className="flex flex-wrap gap-x-12 gap-y-4 text-sm text-gray-600 flex-1 hidden sm:block pl-10">
                 <div>
                   <h3 className="font-semibold text-gray-800 mb-2">
                     Tuyển sinh
                   </h3>
                   <ul className="space-y-1">
-                    <li>• Lịch tuyển sinh</li>
-                    <li>• Ghi danh trực tuyến</li>
-                    <li>• Câu hỏi thường gặp</li>
+                    <li className="before:content-['├──'] before:mr-2 before:text-gray-400">
+                      Lịch tuyển sinh
+                    </li>
+                    <li className="before:content-['├──'] before:mr-2 before:text-gray-400">
+                      Ghi danh trực tuyến
+                    </li>
+                    <li className="before:content-['└──'] before:mr-2 before:text-gray-400">
+                      Câu hỏi thường gặp
+                    </li>
                   </ul>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-gray-800 mb-2 pt-3">
+                  <h3 className="font-semibold text-gray-800 mb-2 ">
                     Chương trình đào tạo
                   </h3>
                   <ul className="space-y-1 max-w-xs">
-                    <li>• Lập trình viên quốc tế</li>
-                    <li>• Quản trị mạng cao cấp</li>
-                    <li>• Quản trị mạng i10</li>
-                    <li>• Phát triển ứng dụng Web với JAVA EE</li>
-                    <li>• Phát triển ứng dụng Web với ASP.Net MVC</li>
-                    <li>• Thiết kế Web chuyên nghiệp</li>
-                    <li>• Hacker mũ trắng</li>
+                    <li className="before:content-['├──'] before:mr-2 before:text-gray-400">
+                      Lập trình viên quốc tế
+                    </li>
+                    <li className="before:content-['├──'] before:mr-2 before:text-gray-400">
+                      Quản trị mạng cao cấp
+                    </li>
+                    <li className="before:content-['├──'] before:mr-2 before:text-gray-400">
+                      Quản trị mạng i10
+                    </li>
+                    <li className="before:content-['├──'] before:mr-2 before:text-gray-400">
+                      Phát triển ứng dụng Web với JAVA EE
+                    </li>
+                    <li className="before:content-['├──'] before:mr-2 before:text-gray-400">
+                      Phát triển ứng dụng Web với ASP.Net MVC
+                    </li>
+                    <li className="before:content-['├──'] before:mr-2 before:text-gray-400">
+                      Thiết kế Web chuyên nghiệp
+                    </li>
+                    <li className="before:content-['└──'] before:mr-2 before:text-gray-400">
+                      Hacker mũ trắng
+                    </li>
                   </ul>
                 </div>
               </div>
