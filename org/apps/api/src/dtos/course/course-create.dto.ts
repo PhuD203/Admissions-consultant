@@ -73,10 +73,6 @@ export class CreateCourseCategoryDto {
   @IsOptional()
   @MaxLength(1000, { message: 'Mô tả danh mục không được vượt quá 1000 ký tự.' })
   description?: string;
-
-  @IsBoolean()
-  @IsOptional()
-  is_active?: boolean = true;
 }
 
 // DTO chính cho việc tạo category với courses

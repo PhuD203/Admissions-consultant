@@ -11,7 +11,6 @@ import {
   consultingApiResponseSchema,
   ConsultingTableRow,
   Metadata,
-  consultingDataSchema,
 } from '@/lib/schema/consulting-data-schema';
 
 import {
@@ -53,7 +52,7 @@ export default function Page() {
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['consulting-list'] }),
           queryClient.invalidateQueries({ queryKey: ['consulting-search'] }),
-          queryClient.invalidateQueries({ queryKey: ['kpi'] }), // Thêm dòng này
+          queryClient.invalidateQueries({ queryKey: ['kpi'] }), 
         ]);
 
         await refetch();
@@ -241,9 +240,6 @@ export default function Page() {
                   queryClient.invalidateQueries({ queryKey: ['kpi'] });
                 }}
               />
-              <div className="px-4 lg:px-6">
-                <ChartAreaInteractive />
-              </div>
               <DataTable
                 data={consultingData}
                 metadata={metadata}

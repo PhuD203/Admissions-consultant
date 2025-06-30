@@ -1,20 +1,18 @@
-// src/lib/schemas/consulting-data-schema.ts
+
 import { z } from 'zod';
 
-// Consulting Data Schema (unchanged, assuming link_facebook fix from previous iteration is applied)
 export const consultingDataSchema = z.object({
   student_id: z.number(),
   student_name: z.string(),
   email: z.string().email().nullable(),
   phone_number: z.string(),
   zalo_phone: z.string().nullable(),
-  // Assuming you chose option 1 or 2 for link_facebook fix, e.g.:
   link_facebook: z
     .string()
-    .url() // Vẫn muốn kiểm tra URL đầy đủ nếu nó là một URL
-    .nullable() // Hoặc là null
-    .or(z.literal('')) // Hoặc là chuỗi rỗng
-    .or(z.string().regex(/^fb\.com\/.+/)), // Hoặc là chuỗi bắt đầu bằng "fb.com/"
+    .url()
+    .nullable()
+    .or(z.literal(''))
+    .or(z.string().regex(/^fb\.com\/.+/)),
   date_of_birth: z.string().nullable(),
   current_education_level: z.string(),
   other_education_level_description: z.string().nullable(),
@@ -45,31 +43,58 @@ export const consultingDataSchema = z.object({
 
 export type ConsultingTableRow = z.infer<typeof consultingDataSchema>;
 
-// Metadata Schema (unchanged)
-export const metadataSchema = z.object({
-  totalRecords: z.number(),
-  firstPage: z.number(),
-  lastPage: z.number(),
-  page: z.number(),
-  limit: z.number(),
-});
+export const metadataSchema = z
+  .object({
+    totalRecords: z.number().optional(),
+    firstPage: z.number().optional(),
+    lastPage: z.number().optional(),
+    page: z.number().optional(),
+    limit: z.number().optional(),
+  })
+  .transform((data) => {
+    return {
+      totalRecords: data.totalRecords ?? 0,
+      firstPage: data.firstPage ?? 1,
+      lastPage: data.lastPage ?? 1,
+      page: data.page ?? 1,
+      limit: data.limit ?? 10,
+    };
+  });
+
+
+export const metadataSchemaAlternative = z.preprocess(
+  (data: any) => {
+
+    if (!data || Object.keys(data).length === 0) {
+      return {
+        totalRecords: 0,
+        firstPage: 1,
+        lastPage: 1,
+        page: 1,
+        limit: 10,
+      };
+    }
+    return data;
+  },
+  z.object({
+    totalRecords: z.number(),
+    firstPage: z.number(),
+    lastPage: z.number(),
+    page: z.number(),
+    limit: z.number(),
+  })
+);
 
 export type Metadata = z.infer<typeof metadataSchema>;
 
-// CORRECTED consultingApiResponseSchema
+
 export const consultingApiResponseSchema = z.object({
-  status: z.string(), // Root level status
+  status: z.string(),
   data: z.object({
     consultingInformation: z.array(consultingDataSchema),
-    metadata: metadataSchema,
-    // Add the unexpected 'status' field that's duplicated inside 'data'
-    status: z.string().optional(), // It exists, but it's redundant and probably should be ignored or confirmed as optional.
-    // Mark as .optional() to allow it to be there without causing an error.
+    metadata: metadataSchema, 
+    status: z.string().optional(),
   }),
-  // If the root metadata is truly separate and consistently present, you might add it here.
-  // Based on the log, it looks like [Prototype]: Object, which might not be a direct JSON field.
-  // If your API explicitly returns a root 'metadata' field, uncomment this:
-  // metadata: metadataSchema.optional(), // Make it optional in case it's not always there or handled differently
 });
 
 export type ConsultingApiResponse = z.infer<typeof consultingApiResponseSchema>;

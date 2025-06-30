@@ -32,6 +32,26 @@ export const useConsultingList = (
   });
 };
 
+export const useAllConsultingList = (
+  page: number = 1,
+  limit: number = 10
+) => {
+  return useQuery<ConsultingApiResponse, Error>({
+    queryKey: ['allConsultingList', page, limit],
+    queryFn: async () => {
+      console.log(`useAllConsultingList: Fetching data for page ${page}, limit ${limit}`);
+      
+      const response = await consultingService.getConsultingInformation(page, limit);
+      const parsedResponse = consultingApiResponseSchema.parse(response);
+      
+      return parsedResponse;
+    },
+    
+    placeholderData: (previousData) => previousData,
+    staleTime: 5 * 60 * 1000, 
+  });
+};
+
 export const useSearchConsultingList = (
   name: string,
   page: number = 1,

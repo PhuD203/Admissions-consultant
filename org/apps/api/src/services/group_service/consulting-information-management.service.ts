@@ -268,9 +268,17 @@ class ConsultingInformationManagementService {
       const paginator = new Paginator(validPage, validLimit);
       const offset = paginator.offset;
 
-      const totalConsultingInformationCount = await prisma.students.count();
+      // Chỉ đếm sinh viên có current_status là 'Registered'
+      const totalConsultingInformationCount = await prisma.students.count({
+        where: {
+          current_status: 'Registered',
+        },
+      });
 
-      console.log('Total count:', totalConsultingInformationCount);
+      console.log(
+        'Total registered students count:',
+        totalConsultingInformationCount
+      );
 
       if (totalConsultingInformationCount === 0) {
         return {
@@ -279,7 +287,11 @@ class ConsultingInformationManagementService {
         };
       }
 
+      // Chỉ lấy sinh viên có current_status là 'Registered'
       const studentsWithDetails = await prisma.students.findMany({
+        where: {
+          current_status: 'Registered',
+        },
         skip: offset,
         take: validLimit,
         select: {

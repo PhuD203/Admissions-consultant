@@ -3,7 +3,6 @@ import {
   PrismaClient,
   students,
   students_current_status,
-  // courses,
 } from '@prisma/client';
 import Paginator from './paginator';
 import { StudentCreateDTO } from '../dtos/student/student-create.dto';
@@ -59,9 +58,8 @@ class StudentService {
         },
       });
     } catch (e) {
-      // Tùy chọn: kiểm tra lỗi nếu sinh viên không tồn tại để trả về thông báo cụ thể hơn
       console.error('Error in StudentService.deleteStudent:', e);
-      throw e; // Ném lỗi để controller có thể xử lý
+      throw e; 
     }
   }
 
@@ -169,14 +167,22 @@ class StudentService {
       let interested_courses_details: string | null = null;
       let varStudentstatushistory: any;
       let varConsultationsessions: any;
+
+      console.log('=== BẮT ĐẦU LOGIC TÌM COUNSELOR ===');
+      console.log(
+        'interested_courses_details từ DTO:',
+        studentDTO.interested_courses_details
+      );
+
       if (studentDTO.interested_courses_details) {
         const courseNames = studentDTO.interested_courses_details
           .split('___')
           .map((name) => name.trim())
           .filter((name) => name.length > 0);
 
+        console.log('Course names sau khi parse:', courseNames);
+
         if (courseNames.length > 0) {
-          // Tìm ID và program_type của các khóa học dựa trên tên
           const courses = await prisma.courses.findMany({
             where: {
               name: {
@@ -185,6 +191,7 @@ class StudentService {
             },
             select: {
               id: true,
+              name: true, 
               program_type: true,
             },
           });
@@ -194,6 +201,11 @@ class StudentService {
           // Thu thập các loại chương trình duy nhất
           const interestedProgramTypes = new Set(
             courses.map((c) => c.program_type)
+          );
+
+          console.log(
+            'Interested program types:',
+            Array.from(interestedProgramTypes)
           );
 
           // Chèn vào bảng `student_interested_courses`
@@ -208,6 +220,7 @@ class StudentService {
                 })
               )
             );
+            console.log('Đã chèn vào student_interested_courses');
           }
 
           if (interestedProgramTypes.size > 0) {
@@ -215,9 +228,9 @@ class StudentService {
               (type) => {
                 switch (type) {
                   case 'Aptech':
-                    return 'Aptech Program';
+                    return 'Aptech Programs';
                   case 'Arena':
-                    return 'Arena Program';
+                    return 'Arena Programs';
                   case 'Short_term___Steam':
                     return 'Short-term + Steam Program';
                   default:
@@ -225,6 +238,15 @@ class StudentService {
                 }
               }
             );
+
+            console.log('Specialty names để tìm counselor:', specialtyNames);
+
+            // LOG: Query để tìm counselor
+            console.log('=== QUERY TÌM COUNSELOR ===');
+            console.log('Điều kiện tìm kiếm:');
+            console.log('- user_type: counselor');
+            console.log('- status: active');
+            console.log('- specializations in:', specialtyNames);
 
             const availableCounselor = await prisma.users.findFirst({
               where: {
@@ -240,11 +262,58 @@ class StudentService {
                   },
                 },
               },
-
+              include: {
+                userspecializations: {
+                  include: {
+                    counselorspecializations: true,
+                  },
+                },
+              },
               orderBy: {
                 id: 'desc',
               },
             });
+
+            console.log('Available counselor found:', availableCounselor);
+
+            if (availableCounselor) {
+              console.log('Counselor details:');
+              console.log('- ID:', availableCounselor.id);
+              console.log('- Full name:', availableCounselor.full_name);
+              console.log('- User type:', availableCounselor.user_type);
+              console.log('- Status:', availableCounselor.status);
+              console.log(
+                '- Specializations:',
+                availableCounselor.userspecializations
+              );
+            } else {
+              console.log('❌ KHÔNG TÌM THẤY COUNSELOR PHÙ HỢP');
+              console.log('Lý do có thể:');
+              console.log(
+                '1. Không có counselor nào có user_type = "counselor"'
+              );
+              console.log('2. Không có counselor nào có status = "active"');
+              console.log(
+                '3. Không có counselor nào có specialization phù hợp'
+              );
+
+              // Kiểm tra từng điều kiện
+              const allCounselors = await prisma.users.findMany({
+                where: { user_type: 'counselor' },
+                select: { id: true, full_name: true, status: true },
+              });
+              console.log('Tất cả counselors trong DB:', allCounselors);
+
+              const activeCounselors = await prisma.users.findMany({
+                where: { user_type: 'counselor', status: 'active' },
+                select: { id: true, full_name: true },
+              });
+              console.log('Active counselors:', activeCounselors);
+
+              const allSpecializations =
+                await prisma.counselorspecializations.findMany();
+              console.log('Tất cả specializations có sẵn:', allSpecializations);
+            }
 
             conselor_name = availableCounselor
               ? availableCounselor.full_name
@@ -254,9 +323,18 @@ class StudentService {
               : null;
             interested_courses_details = courses
               .map(
-                (c) => `${courseNames} (ID: ${c.id}, Loại: ${c.program_type})`
+                (c) => `${c.name} (ID: ${c.id}, Loại: ${c.program_type})` // Sửa lỗi: dùng c.name thay vì courseNames
               )
               .join(', ');
+
+            console.log('=== KẾT QUẢ CUỐI CÙNG ===');
+            console.log('conselor_name:', conselor_name);
+            console.log('assigned_counselor_type:', assigned_counselor_type);
+            console.log(
+              'interested_courses_details:',
+              interested_courses_details
+            );
+
             if (availableCounselor) {
               await prisma.students.update({
                 where: { id: newStudent.id },
@@ -295,20 +373,28 @@ class StudentService {
                 });
 
               console.log(
-                `Student ${newStudent.id} assigned to counselor ${availableCounselor.id}`
+                `✅ Student ${newStudent.id} assigned to counselor ${availableCounselor.id}`
               );
             } else {
               console.warn(
-                `Không tìm thấy tư vấn viên phù hợp cho sinh viên ${
+                `❌ Không tìm thấy tư vấn viên phù hợp cho sinh viên ${
                   newStudent.id
                 } với các khóa học: ${Array.from(interestedProgramTypes).join(
                   ', '
                 )}`
               );
             }
+          } else {
+            console.log('❌ Không có program types để tìm counselor');
           }
+        } else {
+          console.log('❌ Không có course names hợp lệ sau khi parse');
         }
+      } else {
+        console.log('❌ Không có interested_courses_details trong DTO');
       }
+
+      console.log('=== KẾT THÚC LOGIC TÌM COUNSELOR ===');
 
       const mappedResponse: StudentDetailResponse = {
         student_id: newStudent.id,
@@ -339,7 +425,7 @@ class StudentService {
         assigned_counselor_name: conselor_name || null,
         assigned_counselor_type: assigned_counselor_type || null,
         interested_courses_details: interested_courses_details || null,
-        enrolled_courses_details: null, // Cần thêm logic nếu bạn có bảng `studentenrollments` và muốn đưa vào
+        enrolled_courses_details: null, 
         student_status_history: varStudentstatushistory
           ? `Từ: ${varStudentstatushistory.old_status || 'null'} Đến: ${
               varStudentstatushistory.new_status
