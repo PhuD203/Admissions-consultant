@@ -188,6 +188,7 @@ export class UploadFormController {
         name: course.name,
         program_type: course.program_type,
         duration: course.duration_text,
+        description: course.description,
       })),
     }));
 

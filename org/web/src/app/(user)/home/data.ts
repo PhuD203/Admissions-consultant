@@ -7,6 +7,7 @@ export interface CourseCategory {
     name: string;
     program_type: string;
     duration: string;
+    description: string;
   }[];
 }
 

@@ -79,20 +79,14 @@ export default function AboutPage() {
           </nav>
 
           <section className="flex items-center gap-10 bg-aqua mb-3 p-7 border border-gray-400 rounded-md max-w-4xl mx-auto justify-between">
-            <img
-              src="https://yu.ctu.edu.vn/images/upload/article/2020/03/0305-logo-ctu.png"
-              className="h-28"
-            />
+            <img src="logo-ctu.png" alt="Logo" className="h-32" />
             <div className="text-center flex-1 hidden sm:block">
               <p className="text-blue-700 font-semibold text-2xl pb-3">
                 TRUNG TÂM CÔNG NGHỆ PHẦN MỀM ĐẠI HỌC CẦN THƠ
               </p>
               <p className="text-brown-600 text-lg">TƯ VẤN TUYỂN SINH</p>
             </div>
-            <img
-              src="https://aptechcantho.cusc.vn/DesktopModules/CMSP/HinhDaiDien2/1/20181031cusc.png"
-              className="h-32"
-            />
+            <img src="logoCUSC.png" alt="Logo" className="h-32" />
           </section>
 
           <section className="bg-gradient-to-r from-blue-200 via-blue-200 to-blue-200 pt-6 pr-6 pl-6 rounded-t-lg shadow-lg text-black font-semibold border border-gray-400 text-lg">
@@ -168,6 +162,10 @@ export default function AboutPage() {
                                         {course.duration}
                                       </p>
                                     )}
+                                    <p>
+                                      <strong>Mô tả:</strong>{' '}
+                                      {course.description}
+                                    </p>
                                   </div>
 
                                   {/* Nút bên phải */}
