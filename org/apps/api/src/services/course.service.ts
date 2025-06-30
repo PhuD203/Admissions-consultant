@@ -1,14 +1,18 @@
-import {PrismaClient, courses, courses_program_type} from '@prisma/client';
-import Paginator from "./paginator";
-import {CreateCategoryWithCoursesDto, CreateCourseCategoryDto, CreateCourseDto} from "../dtos/course/course-create.dto";
-import {CourseUpdateDto} from "../dtos/course/course-update.dto";
-
+import { PrismaClient, coursecategories, courses, courses_program_type } from '@prisma/client';
+import Paginator from './paginator';
+import {
+  CreateCourseCategoryDto,
+  CreateCourseDto,
+} from '../dtos/course/course-create.dto';
+import { CourseUpdateDto } from '../dtos/course/course-update.dto';
 
 const prisma = new PrismaClient();
 
-
- class CourseService {
-  async getAllCourse(page: number | string = 1, limit: number | string = 10): Promise<{ course: courses[], metadata: any } | null> {
+class CourseService {
+  async getAllCourse(
+    page: number | string = 1,
+    limit: number | string = 10
+  ): Promise<{ course: courses[]; metadata: any } | null> {
     try {
       const paginator = new Paginator(page, limit);
 
@@ -20,7 +24,7 @@ const prisma = new PrismaClient();
           include: {
             coursecategories: true, // Include category info
           },
-        })
+        }),
       ]);
 
       const metadata = paginator.getMetadata(totalCourseCount);
@@ -29,7 +33,7 @@ const prisma = new PrismaClient();
         metadata,
       };
     } catch (e) {
-      console.error("Error in Course.getAllCourse:", e);
+      console.error('Error in Course.getAllCourse:', e);
       return null;
     }
   }
@@ -45,7 +49,7 @@ const prisma = new PrismaClient();
         },
       });
     } catch (e) {
-      console.error("Error in Course.getCourseById:", e);
+      console.error('Error in Course.getCourseById:', e);
       return null;
     }
   }
@@ -54,9 +58,9 @@ const prisma = new PrismaClient();
     const existingCourse = await prisma.courses.findUnique({
       where: {
         id: courseId,
-      }
+      },
     });
-    
+
     if (!existingCourse) {
       return null;
     }
@@ -65,64 +69,12 @@ const prisma = new PrismaClient();
       await prisma.courses.delete({
         where: {
           id: courseId,
-        }
+        },
       });
       return existingCourse;
     } catch (e) {
-      console.error("Error in Course.deleteCourse:", e);
+      console.error('Error in Course.deleteCourse:', e);
       return null;
-    }
-  }
-
-  async createCategoryWithCourses(data: CreateCategoryWithCoursesDto) {
-    try {
-      // Sử dụng transaction để đảm bảo tính nhất quán dữ liệu
-      const result = await prisma.$transaction(async (tx) => {
-        // 1. Tạo category trước
-        const createdCategory = await tx.coursecategories.create({
-          data: {
-            name: data.category.name,
-            description: data.category.description,
-          },
-        });
-
-        // 2. Tạo TẤT CẢ courses với category_id vừa tạo
-        const coursesData = data.courses.map(course => ({
-          name: course.name,
-          description: course.description,
-          duration_text: course.duration_text,
-          price: course.price ? parseFloat(course.price) : null,
-          is_active: course.is_active ?? true,
-          program_type: course.program_type,
-          category_id: createdCategory.id, // Gán category_id từ category vừa tạo
-        }));
-
-        // Sử dụng createMany để tạo nhiều courses cùng lúc
-        await tx.courses.createMany({
-          data: coursesData,
-        });
-
-        // 3. Lấy lại thông tin đầy đủ để trả về
-        const categoryWithCourses = await tx.coursecategories.findUnique({
-          where: { id: createdCategory.id },
-          include: {
-            courses: true,
-          },
-        });
-
-        return categoryWithCourses;
-      });
-
-      return result;
-    } catch (error: any) {
-      // Xử lý các lỗi cụ thể
-      if (error.code === 'P2002') {
-        if (error.meta?.target?.includes('name')) {
-          throw new Error('Tên danh mục hoặc tên khóa học đã tồn tại.');
-        }
-      }
-      
-      throw new Error(`Không thể tạo category và courses: ${error.message || error}`);
     }
   }
 
@@ -155,7 +107,7 @@ const prisma = new PrismaClient();
       if (error.code === 'P2003') {
         throw new Error('Category ID không tồn tại.');
       }
-      
+
       throw new Error(`Không thể tạo khóa học: ${error.message || error}`);
     }
   }
@@ -171,13 +123,42 @@ const prisma = new PrismaClient();
       if (error.code === 'P2002') {
         throw new Error('Tên danh mục đã tồn tại.');
       }
-      
+
       throw new Error(`Không thể tạo danh mục: ${error.message || error}`);
     }
   }
 
+  async getAllCategories(
+    page: number | string = 1,
+    limit: number | string = 10
+  ): Promise<{ categories: coursecategories[]; metadata: any } | null> {
+    try {
+      const paginator = new Paginator(page, limit);
+
+      const [totalCategoryCount, categories] = await Promise.all([
+        prisma.coursecategories.count(),
+        prisma.coursecategories.findMany({
+          skip: paginator.offset,
+          take: paginator.limit,
+        }),
+      ]);
+
+      const metadata = paginator.getMetadata(totalCategoryCount);
+      return {
+        categories,
+        metadata,
+      };
+    } catch (e) {
+      console.error('Error in Category.getAllCategories:', e);
+      return null;
+    }
+  }
+
   // Method mới: Tạo courses cho category có sẵn
-  async createCoursesForExistingCategory(categoryId: number, coursesData: CreateCourseDto[]) {
+  async createCoursesForExistingCategory(
+    categoryId: number,
+    coursesData: CreateCourseDto[]
+  ) {
     try {
       // Kiểm tra category tồn tại
       const categoryExists = await prisma.coursecategories.findUnique({
@@ -190,7 +171,7 @@ const prisma = new PrismaClient();
 
       const result = await prisma.$transaction(async (tx) => {
         // Chuẩn bị data cho courses
-        const coursesCreateData = coursesData.map(course => ({
+        const coursesCreateData = coursesData.map((course) => ({
           name: course.name,
           description: course.description,
           duration_text: course.duration_text,
@@ -221,42 +202,45 @@ const prisma = new PrismaClient();
       if (error.code === 'P2002') {
         throw new Error('Tên khóa học đã tồn tại.');
       }
-      
+
       throw new Error(`Không thể tạo courses: ${error.message || error}`);
     }
   }
 
   // Method mới: Lấy tất cả categories với courses
-  async getAllCategories(page: number | string = 1, limit: number | string = 10) {
-    try {
-      const paginator = new Paginator(page, limit);
+  // async getAllCategories(
+  //   page: number | string = 1,
+  //   limit: number | string = 10
+  // ) {
+  //   try {
+  //     const paginator = new Paginator(page, limit);
 
-      const [totalCount, categories] = await Promise.all([
-        prisma.coursecategories.count(),
-        prisma.coursecategories.findMany({
-          skip: paginator.offset,
-          take: paginator.limit,
-          include: {
-            courses: true,
-            _count: {
-              select: {
-                courses: true,
-              },
-            },
-          },
-        })
-      ]);
+  //     const [totalCount, categories] = await Promise.all([
+  //       prisma.coursecategories.count(),
+  //       prisma.coursecategories.findMany({
+  //         skip: paginator.offset,
+  //         take: paginator.limit,
+  //         include: {
+  //           courses: true,
+  //           _count: {
+  //             select: {
+  //               courses: true,
+  //             },
+  //           },
+  //         },
+  //       }),
+  //     ]);
 
-      const metadata = paginator.getMetadata(totalCount);
-      return {
-        categories,
-        metadata,
-      };
-    } catch (e) {
-      console.error("Error in Course.getAllCategories:", e);
-      return null;
-    }
-  }
+  //     const metadata = paginator.getMetadata(totalCount);
+  //     return {
+  //       categories,
+  //       metadata,
+  //     };
+  //   } catch (e) {
+  //     console.error('Error in Course.getAllCategories:', e);
+  //     return null;
+  //   }
+  // }
 
   // Method mới: Lấy category theo ID với courses
   async getCategoryById(categoryId: number) {
@@ -275,7 +259,7 @@ const prisma = new PrismaClient();
         },
       });
     } catch (e) {
-      console.error("Error in Course.getCategoryById:", e);
+      console.error('Error in Course.getCategoryById:', e);
       return null;
     }
   }
@@ -284,7 +268,7 @@ const prisma = new PrismaClient();
     const existingCourse = await prisma.courses.findUnique({
       where: {
         id: id,
-      }
+      },
     });
 
     if (!existingCourse) {
@@ -310,7 +294,10 @@ const prisma = new PrismaClient();
   }
 
   // Method mới: Cập nhật category
-  async updateCategory(id: number, categoryData: Partial<CreateCourseCategoryDto>) {
+  async updateCategory(
+    id: number,
+    categoryData: Partial<CreateCourseCategoryDto>
+  ) {
     const existingCategory = await prisma.coursecategories.findUnique({
       where: { id },
     });
@@ -353,7 +340,9 @@ const prisma = new PrismaClient();
     }
 
     if (existingCategory._count.courses > 0) {
-      throw new Error('Không thể xóa danh mục vì vẫn còn khóa học trong danh mục này.');
+      throw new Error(
+        'Không thể xóa danh mục vì vẫn còn khóa học trong danh mục này.'
+      );
     }
 
     try {
@@ -362,12 +351,15 @@ const prisma = new PrismaClient();
       });
       return existingCategory;
     } catch (e) {
-      console.error("Error in Course.deleteCategory:", e);
+      console.error('Error in Course.deleteCategory:', e);
       return null;
     }
   }
 
-  async getActiveCourses(page: number | string = 1, limit: number | string = 10): Promise<{ courses: courses[], metadata: any } | null> {
+  async getActiveCourses(
+    page: number | string = 1,
+    limit: number | string = 10
+  ): Promise<{ courses: courses[]; metadata: any } | null> {
     try {
       const paginator = new Paginator(page, limit);
 
@@ -386,7 +378,7 @@ const prisma = new PrismaClient();
           include: {
             coursecategories: true, // Include category info
           },
-        })
+        }),
       ]);
 
       const metadata = paginator.getMetadata(totalActiveCourseCount);
@@ -395,7 +387,7 @@ const prisma = new PrismaClient();
         metadata,
       };
     } catch (e) {
-      console.error("Error in Course.getActiveCourses:", e);
+      console.error('Error in Course.getActiveCourses:', e);
       return null;
     }
   }

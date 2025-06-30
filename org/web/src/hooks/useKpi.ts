@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { kpiService, KPIApiResponse } from '@/services/kpi.service';
 
-// Query keys for consistent caching
 export const KPI_QUERY_KEYS = {
   all: ['kpi'] as const,
   overall: (startDate?: string, endDate?: string) =>
@@ -13,13 +12,11 @@ export const KPI_QUERY_KEYS = {
   summary: () => ['kpi', 'summary'] as const,
 };
 
-// Interface for date range parameters
 interface DateRangeParams {
   startDate?: string;
   endDate?: string;
 }
 
-// Hook for overall KPI statistics
 export const useOverallKPIStatistics = ({
   startDate,
   endDate,
@@ -27,14 +24,13 @@ export const useOverallKPIStatistics = ({
   return useQuery({
     queryKey: KPI_QUERY_KEYS.overall(startDate, endDate),
     queryFn: () => kpiService.getOverallKPIStatistics(startDate, endDate),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     retry: 2,
     refetchOnWindowFocus: false,
   });
 };
 
-// Hook for counselor KPI statistics
 export const useCounselorKPIStatistics = ({
   startDate,
   endDate,
@@ -54,7 +50,6 @@ export const useCounselorKPIStatistics = ({
   });
 };
 
-// Hook for KPI warnings
 export const useKPIWarnings = ({
   startDate,
   endDate,
@@ -62,15 +57,14 @@ export const useKPIWarnings = ({
   return useQuery({
     queryKey: KPI_QUERY_KEYS.warnings(startDate, endDate),
     queryFn: () => kpiService.getKPIWarnings(startDate, endDate),
-    staleTime: 2 * 60 * 1000, // 2 minutes (warnings should be more fresh)
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
     retry: 2,
-    refetchOnWindowFocus: true, // Refetch warnings when window regains focus
-    refetchInterval: 5 * 60 * 1000, // Auto-refetch every 5 minutes
+    refetchOnWindowFocus: true,
+    refetchInterval: 5 * 60 * 1000,
   });
 };
 
-// Hook for KPI summary
 export const useKPISummary = ({
   enabled = true,
 }: { enabled?: boolean } = {}) => {
@@ -78,10 +72,9 @@ export const useKPISummary = ({
     queryKey: KPI_QUERY_KEYS.summary(),
     queryFn: () => kpiService.getKPISummary(),
     enabled,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     retry: (failureCount, error: any) => {
-      // Don't retry on authentication errors
       if (error?.response?.status === 401) return false;
       return failureCount < 2;
     },
@@ -89,7 +82,6 @@ export const useKPISummary = ({
   });
 };
 
-// Custom hook combining multiple KPI data for dashboard
 export const useKPIDashboard = ({
   startDate,
   endDate,
@@ -129,20 +121,20 @@ export const useKPIDashboard = ({
       error: summary.error,
       refetch: summary.refetch,
     },
-    // Combined loading state
+
     isLoading:
       overallStats.isLoading ||
       counselorStats.isLoading ||
       warnings.isLoading ||
       summary.isLoading,
-    // Combined error state
+
     hasError: !!(
       overallStats.error ||
       counselorStats.error ||
       warnings.error ||
       summary.error
     ),
-    // Refetch all data
+
     refetchAll: () => {
       overallStats.refetch();
       counselorStats.refetch();
@@ -152,7 +144,6 @@ export const useKPIDashboard = ({
   };
 };
 
-// Utility hook for invalidating KPI queries
 export const useKPIInvalidation = () => {
   const queryClient = useQueryClient();
 
@@ -193,12 +184,11 @@ export const useKPIInvalidation = () => {
   };
 };
 
-// Example usage with date formatting helper
 export const useKPIWithDateRange = (days: number = 30) => {
   const endDate = new Date().toISOString().split('T')[0]; // Today
   const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
     .toISOString()
-    .split('T')[0]; // X days ago
+    .split('T')[0];
 
   return useKPIDashboard({ startDate, endDate });
 };

@@ -1,9 +1,8 @@
 import apiClient from '@/lib/axios.lib';
-import { ConsultingApiResponseHistory, consultingApiResponseSchemaHistory } from '@/lib/schema/consulting-data-history';
+import { ConsultingApiResponseHistory } from '@/lib/schema/consulting-data-history';
 import { ConsultingApiResponse } from '@/lib/schema/consulting-data-schema';
 
 export const consultingService = {
-  // Hàm đã có và sử dụng apiClient
   getConsultingInformation: async (
     page: number = 1,
     limit: number = 10
@@ -13,7 +12,7 @@ export const consultingService = {
         `consulting.service.ts: Fetching all consulting info (page: ${page}, limit: ${limit})`
       );
       const response = await apiClient.get(
-        '/consulting-information-management', // <-- Đảm bảo đây là endpoint đúng cho danh sách chung
+        '/consulting-information-management',
         {
           params: {
             page: page,
@@ -37,17 +36,13 @@ export const consultingService = {
     }
   },
 
-  // Cập nhật hàm này để sử dụng apiClient
   async getConsultingInformationByConselorId(
-    counselorId: number = 6, // counselorId bây giờ là bắt buộc nếu dùng path param, nhưng bạn có thể xử lý undefined
+    counselorId: number = 6,
     page: number = 1,
     limit: number = 10
   ): Promise<ConsultingApiResponse> {
     try {
-      // Kiểm tra nếu counselorId không tồn tại, bạn có thể ném lỗi hoặc gọi hàm chung
       if (counselorId === undefined || counselorId === null) {
-        // Hoặc gọi getConsultingInformation (hàm chung) nếu không có counselorId
-        // return this.getConsultingInformation(page, limit);
         throw new Error('Counselor ID is required for this specific endpoint.');
       }
 
@@ -55,11 +50,9 @@ export const consultingService = {
         `consulting.service.ts: Fetching by counselorId (path param) "${counselorId}" (page: ${page}, limit: ${limit})`
       );
       const response = await apiClient.get(
-        // Thay đổi URL để bao gồm counselorId trong path
-        `/consulting-information-management/counselorId`, // <-- SỬA ĐƯỜNG DẪN NÀY
+        `/consulting-information-management/counselorId`,
         {
           params: {
-            // page và limit vẫn là query params
             page: page,
             limit: limit,
           },
@@ -83,19 +76,17 @@ export const consultingService = {
     }
   },
 
-  // Cập nhật hàm này để sử dụng apiClient
   async searchConsultingInformation(
     name: string,
-    page: number = 1, // Đặt giá trị mặc định
-    limit: number = 10 // Đặt giá trị mặc định
+    page: number = 1,
+    limit: number = 10
   ): Promise<ConsultingApiResponse> {
-    // Thêm kiểu trả về
     try {
       console.log(
         `consulting.service.ts: Searching consulting info for term "${name}" (page: ${page}, limit: ${limit})`
       );
       const response = await apiClient.get(
-        '/consulting-information-management/search', // <-- Đặt đúng endpoint API của bạn cho tìm kiếm theo tên
+        '/consulting-information-management/search',
         {
           params: {
             name: name,
@@ -108,7 +99,7 @@ export const consultingService = {
         'consulting.service.ts: Response for search consulting info:',
         response.data
       );
-      // Tương tự, nếu API trả về JSend, chỉ cần trả về response.data
+
       return response.data;
     } catch (error: any) {
       console.error('Error searching consulting information:', error);
@@ -120,25 +111,19 @@ export const consultingService = {
     }
   },
 
-  // Thêm vào consultingService object
   updateConsultingInformation: async (
     studentId: number,
-    updateData: any // Bạn có thể định nghĩa interface cụ thể cho updateData
+    updateData: any
   ): Promise<any> => {
-    // Có thể định nghĩa return type cụ thể
     try {
       console.log(
         `consulting.service.ts: Updating consulting info for studentId: ${studentId}`,
         updateData
       );
 
-      // Tạo URL với studentId trong path
       let url = `/consulting-information-management/${studentId}`;
 
-      // Tạo config cho request
-      const config: any = {
-        // Headers nếu cần
-      };
+      const config: any = {};
 
       const response = await apiClient.put(url, updateData, config);
 
@@ -155,7 +140,6 @@ export const consultingService = {
         console.error('Error response data:', error.response.data);
         console.error('Error response status:', error.response.status);
 
-        // Xử lý các loại lỗi cụ thể
         if (error.response.status === 404) {
           throw new Error('Student not found or update failed.');
         } else if (error.response.status === 400) {
@@ -167,19 +151,17 @@ export const consultingService = {
         }
       }
 
-      throw error; // Ném lại lỗi để React Query có thể bắt
+      throw error;
     }
   },
 
-  async getConsultingInformationHistoryByConselorId( 
+  async getConsultingInformationHistoryByConselorId(
     page: number = 1,
     limit: number = 10
   ): Promise<ConsultingApiResponseHistory> {
     try {
-
       const response = await apiClient.get(
-        // Thay đổi URL để bao gồm counselorId trong path
-        `/consulting-information-management/history`, 
+        `/consulting-information-management/history`,
         {
           params: {
             page: page,

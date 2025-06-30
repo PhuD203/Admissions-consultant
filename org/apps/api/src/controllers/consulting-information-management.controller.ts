@@ -19,7 +19,6 @@ import { authenticateToken } from '../middlewares/auth.middleware';
 @JsonController('/consulting-information-management')
 export class ConsultingInformationManagementController {
   @Get('')
-  @UseBefore(authenticateToken())
   async getAllUsers(
     @QueryParam('page') page: number = 1,
     @QueryParam('limit') limit: number = 10,

@@ -32,8 +32,7 @@ interface LoginError {
   status?: number;
 }
 
-// Internal hook for login mutation (can be kept internal or exported if needed elsewhere)
-export const useLoginMutation = () => { // Renamed to avoid confusion with the public `login` function
+export const useLoginMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation<LoginResponse, LoginError, LoginCredentials>({
@@ -41,8 +40,6 @@ export const useLoginMutation = () => { // Renamed to avoid confusion with the p
       return await authService.login(email, password);
     },
     onSuccess: (data) => {
-      // We will handle localStorage in the component for more control,
-      // but you can still cache user data here.
       queryClient.setQueryData(['user'], data.user);
       queryClient.invalidateQueries({ queryKey: ['protected-data'] });
     },
@@ -55,20 +52,19 @@ export const useLoginMutation = () => { // Renamed to avoid confusion with the p
 // Main authentication hook
 export const useAuth = () => {
   const [isClient, setIsClient] = useState(false);
-  const loginMutation = useLoginMutation(); // Use the renamed internal mutation hook
+  const loginMutation = useLoginMutation();
   const queryClient = useQueryClient();
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // The 'login' function that components will call
   const login = async (credentials: LoginCredentials) => {
     try {
       const result = await loginMutation.mutateAsync(credentials);
-      return result; // Return the result for the component to handle tokens
+      return result;
     } catch (error) {
-      throw error; // Re-throw the error so the component can catch it
+      throw error;
     }
   };
 
@@ -77,7 +73,7 @@ export const useAuth = () => {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
     }
-    queryClient.clear(); // Clear all cached data
+    queryClient.clear();
   };
 
   const isAuthenticated = () => {
@@ -88,7 +84,7 @@ export const useAuth = () => {
   };
 
   return {
-    login, // This is the function you'll call in LoginForm
+    login,
     logout,
     isAuthenticated,
     isLoading: loginMutation.isPending,
@@ -99,7 +95,6 @@ export const useAuth = () => {
   };
 };
 
-// Hook to get user data from cache
 export const useUser = () => {
   const queryClient = useQueryClient();
   return queryClient.getQueryData<LoginResponse['user']>(['user']);

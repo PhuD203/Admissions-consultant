@@ -9,7 +9,6 @@ const apiClient = axios.create({
   },
 });
 
-// Interceptors cho authentication, logging, error handling
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken');
@@ -33,9 +32,7 @@ apiClient.interceptors.response.use(
       error.response?.status
     );
 
-    // Handle common errors
     if (error.response?.status === 401) {
-      // Redirect to login
       window.location.href = '/login';
     }
 

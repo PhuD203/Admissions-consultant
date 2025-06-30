@@ -3,10 +3,9 @@ import dashboardAnalyticsApi, {
   DashboardOverview,
   ConsultationAnalyticsResult,
   CampaignAnalyticsResult,
-  SourceBreakdown
+  SourceBreakdown,
 } from '@/services/report.service';
 
-// Query keys constants
 export const DASHBOARD_QUERY_KEYS = {
   overview: 'dashboard-overview',
   consultations: 'dashboard-consultations',
@@ -15,7 +14,6 @@ export const DASHBOARD_QUERY_KEYS = {
   topSources: 'dashboard-top-sources',
 } as const;
 
-// Hook options interfaces
 interface UseConsultationsOptions {
   year?: number;
   status?: 'Scheduled' | 'Completed' | 'Canceled' | 'No Show';
@@ -39,9 +37,6 @@ interface UseTopSourcesOptions {
   enabled?: boolean;
 }
 
-/**
- * Hook để lấy dữ liệu tổng quan dashboard
- */
 export const useDashboardOverview = (
   options?: UseQueryOptions<DashboardOverview, Error>
 ) => {
@@ -54,9 +49,6 @@ export const useDashboardOverview = (
   });
 };
 
-/**
- * Hook để lấy dữ liệu lượt tư vấn theo tháng
- */
 export const useConsultationsByMonth = (
   params?: UseConsultationsOptions,
   options?: UseQueryOptions<ConsultationAnalyticsResult, Error>
@@ -73,9 +65,6 @@ export const useConsultationsByMonth = (
   });
 };
 
-/**
- * Hook để lấy dữ liệu hiệu quả chiến dịch
- */
 export const useCampaignEffectiveness = (
   params?: UseCampaignEffectivenessOptions,
   options?: UseQueryOptions<CampaignAnalyticsResult, Error>
@@ -92,25 +81,26 @@ export const useCampaignEffectiveness = (
   });
 };
 
-/**
- * Hook để lấy dữ liệu breakdown theo source
- */
 export const useCampaignSourceBreakdown = (
   params?: UseCampaignSourcesOptions,
-  options?: UseQueryOptions<{
-    sourceBreakdown: SourceBreakdown[];
-    topPerformingSources: SourceBreakdown[];
-    summary: {
-      totalSources: number;
-      period: string;
-    };
-  }, Error>
+  options?: UseQueryOptions<
+    {
+      sourceBreakdown: SourceBreakdown[];
+      topPerformingSources: SourceBreakdown[];
+      summary: {
+        totalSources: number;
+        period: string;
+      };
+    },
+    Error
+  >
 ) => {
   const { enabled = true, ...queryParams } = params || {};
 
   return useQuery({
     queryKey: [DASHBOARD_QUERY_KEYS.campaignSources, queryParams],
-    queryFn: () => dashboardAnalyticsApi.getCampaignSourceBreakdown(queryParams),
+    queryFn: () =>
+      dashboardAnalyticsApi.getCampaignSourceBreakdown(queryParams),
     enabled,
     staleTime: 5 * 60 * 1000,
     refetchInterval: 20 * 60 * 1000, // 20 minutes
@@ -118,16 +108,16 @@ export const useCampaignSourceBreakdown = (
   });
 };
 
-/**
- * Hook để lấy top sources có hiệu quả cao nhất
- */
 export const useTopPerformingSources = (
   params?: UseTopSourcesOptions,
-  options?: UseQueryOptions<{
-    topSources: SourceBreakdown[];
-    period: string;
-    totalSources: number;
-  }, Error>
+  options?: UseQueryOptions<
+    {
+      topSources: SourceBreakdown[];
+      period: string;
+      totalSources: number;
+    },
+    Error
+  >
 ) => {
   const { enabled = true, ...queryParams } = params || {};
 
@@ -141,9 +131,6 @@ export const useTopPerformingSources = (
   });
 };
 
-/**
- * Hook tổng hợp để lấy tất cả dữ liệu dashboard
- */
 export const useDashboardData = (params?: {
   consultations?: UseConsultationsOptions;
   campaigns?: UseCampaignEffectivenessOptions;
@@ -154,24 +141,24 @@ export const useDashboardData = (params?: {
   const { enabled = true } = params || {};
 
   const overview = useDashboardOverview({
-      enabled,
-      queryKey: []
+    enabled,
+    queryKey: [],
   });
   const consultations = useConsultationsByMonth(params?.consultations, {
-      enabled,
-      queryKey: []
+    enabled,
+    queryKey: [],
   });
   const campaigns = useCampaignEffectiveness(params?.campaigns, {
-      enabled,
-      queryKey: []
+    enabled,
+    queryKey: [],
   });
   const sources = useCampaignSourceBreakdown(params?.sources, {
-      enabled,
-      queryKey: []
+    enabled,
+    queryKey: [],
   });
   const topSources = useTopPerformingSources(params?.topSources, {
-      enabled,
-      queryKey: []
+    enabled,
+    queryKey: [],
   });
 
   return {
@@ -180,9 +167,24 @@ export const useDashboardData = (params?: {
     campaigns,
     sources,
     topSources,
-    isLoading: overview.isLoading || consultations.isLoading || campaigns.isLoading || sources.isLoading || topSources.isLoading,
-    isError: overview.isError || consultations.isError || campaigns.isError || sources.isError || topSources.isError,
-    error: overview.error || consultations.error || campaigns.error || sources.error || topSources.error,
+    isLoading:
+      overview.isLoading ||
+      consultations.isLoading ||
+      campaigns.isLoading ||
+      sources.isLoading ||
+      topSources.isLoading,
+    isError:
+      overview.isError ||
+      consultations.isError ||
+      campaigns.isError ||
+      sources.isError ||
+      topSources.isError,
+    error:
+      overview.error ||
+      consultations.error ||
+      campaigns.error ||
+      sources.error ||
+      topSources.error,
     refetchAll: () => {
       overview.refetch();
       consultations.refetch();
@@ -202,24 +204,44 @@ export const useInvalidateDashboard = () => {
 
   return {
     invalidateAll: () => {
-      queryClient.invalidateQueries({ queryKey: [DASHBOARD_QUERY_KEYS.overview] });
-      queryClient.invalidateQueries({ queryKey: [DASHBOARD_QUERY_KEYS.consultations] });
-      queryClient.invalidateQueries({ queryKey: [DASHBOARD_QUERY_KEYS.campaigns] });
-      queryClient.invalidateQueries({ queryKey: [DASHBOARD_QUERY_KEYS.campaignSources] });
-      queryClient.invalidateQueries({ queryKey: [DASHBOARD_QUERY_KEYS.topSources] });
+      queryClient.invalidateQueries({
+        queryKey: [DASHBOARD_QUERY_KEYS.overview],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [DASHBOARD_QUERY_KEYS.consultations],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [DASHBOARD_QUERY_KEYS.campaigns],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [DASHBOARD_QUERY_KEYS.campaignSources],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [DASHBOARD_QUERY_KEYS.topSources],
+      });
     },
     invalidateOverview: () => {
-      queryClient.invalidateQueries({ queryKey: [DASHBOARD_QUERY_KEYS.overview] });
+      queryClient.invalidateQueries({
+        queryKey: [DASHBOARD_QUERY_KEYS.overview],
+      });
     },
     invalidateConsultations: () => {
-      queryClient.invalidateQueries({ queryKey: [DASHBOARD_QUERY_KEYS.consultations] });
+      queryClient.invalidateQueries({
+        queryKey: [DASHBOARD_QUERY_KEYS.consultations],
+      });
     },
     invalidateCampaigns: () => {
-      queryClient.invalidateQueries({ queryKey: [DASHBOARD_QUERY_KEYS.campaigns] });
+      queryClient.invalidateQueries({
+        queryKey: [DASHBOARD_QUERY_KEYS.campaigns],
+      });
     },
     invalidateSources: () => {
-      queryClient.invalidateQueries({ queryKey: [DASHBOARD_QUERY_KEYS.campaignSources] });
-      queryClient.invalidateQueries({ queryKey: [DASHBOARD_QUERY_KEYS.topSources] });
+      queryClient.invalidateQueries({
+        queryKey: [DASHBOARD_QUERY_KEYS.campaignSources],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [DASHBOARD_QUERY_KEYS.topSources],
+      });
     },
   };
 };

@@ -1,8 +1,8 @@
-// src/lib/schemas/consulting-update-schema.ts
+
 import { z } from 'zod';
 
 export const consultingUpdateSchema = z.object({
-  student_id: z.number(), // Chỉ bắt buộc trường ID
+  student_id: z.number(), 
   student_name: z.string().optional(),
   email: z.string().email().nullable().optional(),
   phone_number: z.string().optional(),
@@ -18,9 +18,6 @@ export const consultingUpdateSchema = z.object({
   current_status: z.string().optional(),
   status_change_date: z.string().nullable().optional(),
   registration_date: z.string().nullable().optional(),
-  // Bỏ các trường read-only (sẽ tự động cập nhật ở server)
-  // student_created_at: z.never().optional(),
-  // student_updated_at: z.never().optional(),
   assigned_counselor_name: z.string().optional(),
   assigned_counselor_type: z.string().optional(),
   interested_courses_details: z.string().nullable().optional(),

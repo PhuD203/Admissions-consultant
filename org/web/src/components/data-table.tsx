@@ -779,29 +779,14 @@ export function DataTable({
   );
 }
 
-const chartData = [
-  { month: 'Tháng 1', visitors: 186 },
-  { month: 'Tháng 2', visitors: 305 },
-  { month: 'Tháng 3', visitors: 237 },
-  { month: 'Tháng 4', visitors: 73 },
-  { month: 'Tháng 5', visitors: 209 },
-  { month: 'Tháng 6', visitors: 214 },
-];
 
-const chartConfig = {
-  visitors: {
-    label: 'Lượt truy cập',
-    color: 'var(--primary)',
-  },
-} satisfies ChartConfig;
 
-// Utility function to filter out null, undefined, or empty string values
+
 const filterEmptyValues = (obj: Record<string, any>) => {
   const filtered: Record<string, any> = {};
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
       const value = obj[key];
-      // Bỏ qua null, undefined, và chuỗi rỗng
       if (value !== null && value !== '' && value !== undefined) {
         filtered[key] = value;
       }
@@ -822,7 +807,6 @@ function TableCellViewer({
 }) {
   const isMobile = useIsMobile();
 
-  // Initialize states with item data
   const [initialData, setInitialData] = React.useState(item);
 
   React.useEffect(() => {
@@ -1334,39 +1318,6 @@ function TableCellViewer({
             {/* BỎ overflow-y-auto Ở ĐÂY */}
             {!isMobile && (
               <>
-                {/* ChartContainer và các thành phần khác */}
-                <ChartContainer config={chartConfig}>
-                  <AreaChart
-                    accessibilityLayer
-                    data={chartData}
-                    margin={{
-                      left: 0,
-                      right: 10,
-                    }}
-                  >
-                    <CartesianGrid vertical={false} />
-                    <XAxis
-                      dataKey="month"
-                      tickLine={false}
-                      axisLine={false}
-                      tickMargin={8}
-                      tickFormatter={(value) => value.slice(0, 3)}
-                      hide
-                    />
-                    <ChartTooltip
-                      cursor={false}
-                      content={<ChartTooltipContent indicator="dot" />}
-                    />
-                    <Area
-                      dataKey="visitors"
-                      type="natural"
-                      fill="var(--color-visitors)"
-                      fillOpacity={0.4}
-                      stroke="var(--color-visitors)"
-                      stackId="a"
-                    />
-                  </AreaChart>
-                </ChartContainer>
                 <Separator />
                 <div className="grid gap-2 px-4">
                   <div className="flex gap-2 font-medium leading-none">
@@ -1749,7 +1700,6 @@ function TableCellViewer({
                   </Select>
                 </div>
 
-                {/* Trạng thái Tư Vấn Cuối Cùng - Select */}
                 <div className="flex flex-col gap-3">
                   <Label htmlFor="last_consultation_status">
                     Trạng Thái Tư Vấn Cuối Cùng
@@ -1774,7 +1724,6 @@ function TableCellViewer({
                 </div>
               </div>
 
-              {/* Tên Người Tư Vấn Cuối Cùng - READ ONLY */}
               <div className="flex flex-col gap-3">
                 <Label htmlFor="last_consultation_counselor_name">
                   Tên Người Tư Vấn Cuối Cùng
