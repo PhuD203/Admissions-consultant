@@ -16,7 +16,6 @@ import 'reflect-metadata';
 @JsonController('/courses')
 export class CourseController {
   @Get('')
-
   @Get('/cate')
   async getAllCategories(
     @QueryParam('page') page: number = 1,
@@ -36,7 +35,7 @@ export class CourseController {
     }
   }
 
-  @Get('/active') 
+  @Get('/active')
   async getActiveCourses(
     @QueryParam('page') page: number = 1,
     @QueryParam('limit') limit: number = 10,
@@ -72,7 +71,6 @@ export class CourseController {
         .json(jsend.error(e.message || 'Internal server error'));
     }
   }
-
 
   @Post('/categories/with-courses')
   async createCategoryWithCourses(@Body() data: any, @Res() res: any) {

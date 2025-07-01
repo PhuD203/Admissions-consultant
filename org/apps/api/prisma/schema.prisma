@@ -140,7 +140,7 @@ model students {
   id                                     Int                              @id @default(autoincrement()) @db.UnsignedInt
   student_name                           String                           @db.VarChar(255)
   email                                  String?                          @unique(map: "email") @db.VarChar(255)
-  phone_number                           String                           @unique(map: "phone_number") @db.VarChar(20)
+  phone_number                           String                           @db.VarChar(20) 
   gender                                 String                           @db.VarChar(20)
   zalo_phone                             String?                          @db.VarChar(20)
   link_facebook                          String?                          @db.VarChar(255)
