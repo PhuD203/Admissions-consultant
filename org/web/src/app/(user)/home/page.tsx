@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
 import { fetchCourseCategories, CourseCategory } from './data';
+import ChatWidget from '@/components/chatbox';
 
 export default function AboutPage() {
   const router = useRouter();
@@ -43,36 +44,42 @@ export default function AboutPage() {
           </button>
 
           <nav
-            className={`$
-              {isOpen ? 'block' : 'hidden'} flex flex-col fixed top-0 gap-5 sm:px-4 sm:gap-3 pt-20 h-full w-64 bg-white p-6 z-40 shadow-lg text-lg sm:inline-flex sm:fixed sm:h-8 sm:flex-row sm:static sm:top-0 sm:w-auto sm:border-2 sm:border-gray-400 sm:rounded-bl-xl sm:rounded-br-xl sm:bg-gray-100 sm:text-gray-800 sm:z-50 sm:shadow-lg sm:p-0`}
+            className={`${
+              isOpen ? 'block' : 'hidden'
+            } flex flex-col fixed top-0 gap-5 sm:px-4 sm:gap-3 pt-20 h-full w-64 bg-white p-6 z-40 shadow-lg text-lg sm:inline-flex sm:fixed sm:h-8 sm:flex-row sm:static sm:top-0 sm:w-auto sm:border-2 sm:border-gray-400 sm:rounded-bl-xl sm:rounded-br-xl sm:bg-gray-100 sm:text-gray-800 sm:z-50 sm:shadow-lg sm:p-0`}
           >
             <a
               href="https://aptechcantho.cusc.vn/"
               className="text-gray-600 hover:text-blue-600"
+              onClick={() => setIsOpen(false)}
             >
               Trang chủ
             </a>
             <a
               href="https://aptechcantho.cusc.vn/Default.aspx?tabid=121"
               className="text-gray-600 hover:text-blue-600"
+              onClick={() => setIsOpen(false)}
             >
               Giới thiệu
             </a>
             <a
               href="https://aptechcantho.cusc.vn/Default.aspx?tabid=191"
               className="text-gray-600 hover:text-blue-600"
+              onClick={() => setIsOpen(false)}
             >
               Liên hệ
             </a>
             <a
               href="https://aptechcantho.cusc.vn/cusctour/"
               className="text-gray-600 hover:text-blue-600"
+              onClick={() => setIsOpen(false)}
             >
               Tham quan CUSC
             </a>
             <a
               href="https://aptechcantho.cusc.vn/Default.aspx?tabid=191&ctl=Login&returnurl=%2fDefault.aspx%3ftabid%3d191"
               className="text-gray-600 hover:text-blue-600"
+              onClick={() => setIsOpen(false)}
             >
               Đăng nhập
             </a>
@@ -277,6 +284,9 @@ export default function AboutPage() {
             </footer>
           </section>
         </div>
+      </div>
+      <div>
+        <ChatWidget />
       </div>
     </div>
   );

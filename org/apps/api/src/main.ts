@@ -10,11 +10,15 @@ import { UserController } from './controllers/user.controller';
 import { StudentController } from './controllers/student.controller';
 import { CourseController } from './controllers/course.controller';
 import { KPIStatisticsController } from './controllers/kpi-definition.controller';
-import { UploadFormController } from './controllers/uploadfile.controller';
+import { UploadFormController } from './controllers/uploadform.controller';
 import { ConsultingInformationManagementController } from './controllers/consulting-information-management.controller';
 import { AuthController } from './controllers/auth.controller';
 import { DashboardAnalyticsController } from './controllers/consultation-session.controller';
 import { ExportController } from './controllers/sendexcel.controller'; // ✅ Import controller
+import { DataGet } from './controllers/data.controller';
+import { DataUpdate } from './controllers/updatedata.controller';
+import { StudentStatistical } from './controllers/statistical-data.controller';
+import { ExportWordController } from './controllers/exportword.controller';
 
 const host = process.env.HOST ?? 'localhost';
 const port = Number(process.env.PORT ?? 3000);
@@ -39,6 +43,8 @@ const app: Express = createExpressServer({
   },
   routePrefix: '/api',
   controllers: [
+    DataGet,
+    DataUpdate,
     UserController,
     StudentController,
     CourseController,
@@ -48,6 +54,8 @@ const app: Express = createExpressServer({
     UploadFormController,
     DashboardAnalyticsController,
     ExportController,
+    StudentStatistical,
+    ExportWordController,
   ],
   defaultErrorHandler: false,
 });

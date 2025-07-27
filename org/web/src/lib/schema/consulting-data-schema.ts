@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 
 export const consultingDataSchema = z.object({
@@ -19,6 +18,8 @@ export const consultingDataSchema = z.object({
   high_school_name: z.string().nullable(),
   city: z.string(),
   source: z.string(),
+  assigned_counselor_id: z.string().optional(),
+
   notification_consent: z.string(),
   current_status: z.string(),
   status_change_date: z.string().nullable(),
@@ -61,10 +62,8 @@ export const metadataSchema = z
     };
   });
 
-
 export const metadataSchemaAlternative = z.preprocess(
   (data: any) => {
-
     if (!data || Object.keys(data).length === 0) {
       return {
         totalRecords: 0,
@@ -87,12 +86,11 @@ export const metadataSchemaAlternative = z.preprocess(
 
 export type Metadata = z.infer<typeof metadataSchema>;
 
-
 export const consultingApiResponseSchema = z.object({
   status: z.string(),
   data: z.object({
     consultingInformation: z.array(consultingDataSchema),
-    metadata: metadataSchema, 
+    metadata: metadataSchema,
     status: z.string().optional(),
   }),
 });

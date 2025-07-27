@@ -110,6 +110,7 @@ import {
   ConsultingTableRow,
 } from '@/lib/schema/consulting-data-schema';
 import { exportDataToExcel } from '@/lib/export-to-excel';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
 // ---
 // ## Schemas and Data Transformation
@@ -241,9 +242,26 @@ const columns: ColumnDef<z.infer<typeof tableSchema>>[] = [
     header: 'Số Điện Thoại',
   },
   {
-    accessorKey: 'zalo_phone',
-    header: 'Zalo',
+    accessorKey: 'current_status',
+    header: 'Trạng Thái',
+    cell: ({ row }) => (
+      <Badge
+        variant="outline"
+        className="text-muted-foreground px-1.5 flex items-center gap-1"
+      >
+        {row.original.current_status === 'Đã ghi danh' ? (
+          <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400 size-4" />
+        ) : (
+          <IconLoader className="animate-spin size-4" />
+        )}
+        {row.original.current_status}
+      </Badge>
+    ),
   },
+  // {
+  //   accessorKey: 'zalo_phone',
+  //   header: 'Zalo',
+  // },
   {
     accessorKey: 'link_facebook',
     header: 'Link Facebook',
@@ -268,43 +286,27 @@ const columns: ColumnDef<z.infer<typeof tableSchema>>[] = [
     accessorKey: 'source',
     header: 'Nguồn',
   },
-  {
-    accessorKey: 'current_status',
-    header: 'Trạng Thái',
-    cell: ({ row }) => (
-      <Badge
-        variant="outline"
-        className="text-muted-foreground px-1.5 flex items-center gap-1"
-      >
-        {row.original.current_status === 'Đã ghi danh' ? (
-          <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400 size-4" />
-        ) : (
-          <IconLoader className="animate-spin size-4" />
-        )}
-        {row.original.current_status}
-      </Badge>
-    ),
-  },
-  {
-    accessorKey: 'registration_date',
-    header: 'Ngày Đăng Ký',
-  },
-  {
-    accessorKey: 'assigned_counselor_name',
-    header: 'Tên Tư Vấn Viên',
-  },
-  {
-    accessorKey: 'last_consultation_date',
-    header: 'Ngày TV Gần Nhất',
-  },
-  {
-    accessorKey: 'last_consultation_status',
-    header: 'Trạng Thái TV Gần Nhất',
-  },
-  {
-    accessorKey: 'last_consultation_notes',
-    header: 'Ghi Chú TV',
-  },
+
+  // {
+  //   accessorKey: 'registration_date',
+  //   header: 'Ngày Đăng Ký',
+  // },
+  // {
+  //   accessorKey: 'assigned_counselor_name',
+  //   header: 'Tên Tư Vấn Viên',
+  // },
+  // {
+  //   accessorKey: 'last_consultation_date',
+  //   header: 'Ngày TV Gần Nhất',
+  // },
+  // {
+  //   accessorKey: 'last_consultation_status',
+  //   header: 'Trạng Thái TV Gần Nhất',
+  // },
+  // {
+  //   accessorKey: 'last_consultation_notes',
+  //   header: 'Ghi Chú TV',
+  // },
   {
     id: 'actions',
     cell: () => (
@@ -358,6 +360,22 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof tableSchema>> }) {
 
 // ---
 // ## DataTable Component
+export const paymentStatusOptions = [
+  { id: 'Pending', label: 'Chờ thanh toán' },
+  { id: 'Paid', label: 'Đã thanh toán' },
+  { id: 'Partially_Paid', label: 'Thanh toán một phần' },
+  { id: 'Refunded', label: 'Đã hoàn tiền' },
+];
+
+function getPaymentStatusIdByLabel(label: string): string {
+  return (
+    paymentStatusOptions.find((option) => option.label === label)?.id || label
+  );
+}
+
+function getPaymentStatusLabelById(id: string): string {
+  return paymentStatusOptions.find((option) => option.id === id)?.label || id;
+}
 
 // Define the props interface for clarity and type safety.
 export interface DataTableProps {
@@ -475,23 +493,79 @@ export function DataTable({
       // E.g., saveNewOrder(arrayMove(reorderableData, oldIndex, newIndex));
     }
   }
-  const handleExport = () => {
-    // Lấy mảng dữ liệu cần xuất.
-    // Dữ liệu API của bạn nằm trong data.data.consultingInformation
-    const consultingData = data;
+  // const handleExport = async () => {
+  //   try {
+  //     const res = await fetch('http://localhost:3000/api/exportword/word', {
+  //       method: 'GET',
+  //     });
 
-    if (consultingData && consultingData.length > 0) {
-      // Gọi hàm exportDataToExcel với mảng dữ liệu và tên file
-      exportDataToExcel(consultingData, 'Danh_sach_tu_van');
-      // Hiển thị thông báo thành công cho người dùng
-      toast.success('Đã xuất file Excel thành công!');
-    } else {
-      // Hiển thị thông báo nếu không có dữ liệu
-      toast.error('Không có dữ liệu để xuất!');
-      console.error('Không có dữ liệu để xuất.');
+  //     if (!res.ok) {
+  //       toast.error('Lỗi khi lấy dữ liệu!');
+  //       return;
+  //     }
+
+  //     const blob = await res.blob();
+  //     const url = window.URL.createObjectURL(blob);
+  //     const a = document.createElement('a');
+  //     a.href = url;
+  //     a.download = 'aa.pdf';
+  //     document.body.appendChild(a);
+  //     a.click();
+  //     a.remove();
+  //     window.URL.revokeObjectURL(url);
+  //     toast.success('Đã tải file thành công!');
+  //   } catch (err) {
+  //     toast.error('Lỗi khi export!');
+  //     console.error(err);
+  //   }
+  // };
+
+  const handleExport = async () => {
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        console.error('⚠️ Chưa có access token trong localStorage');
+        return;
+      }
+
+      const res = await fetch(
+        'http://localhost:3000/api/exportexcel/enrollmentsData',
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        toast.error('Lỗi khi lấy dữ liệu!');
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Danh_sach_sinh_vien_dang_ky.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Đã tải file thành công!');
+    } catch (err) {
+      toast.error('Lỗi khi export!');
+      console.error(err);
     }
   };
 
+  // const [openIndexes, setOpenIndexes] = React.useState<number[]>([]);
+
+  // const toggleOpen = (index: number) => {
+  //   setOpenIndexes((prev) =>
+  //     prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
+  //   );
+  // };
   return (
     <Tabs
       defaultValue="outline"
@@ -745,6 +819,134 @@ const chartConfig = {
 function TableCellViewer({ item }: { item: z.infer<typeof tableSchema> }) {
   const isMobile = useIsMobile();
 
+  const [openIndex, setOpenIndex] = React.useState<number | null>(null);
+
+  const toggleOpen = (index: number) => {
+    setOpenIndex((prev) => (prev === index ? null : index));
+  };
+  const [formValues, setFormValues] = React.useState<
+    Record<number, Record<string, string>>
+  >({});
+
+  React.useEffect(() => {
+    const initialValues: Record<number, Record<string, string>> = {};
+
+    (item.enrolled_courses_details || '')
+      .split(';')
+      .filter(Boolean)
+      .forEach((courseBlock, courseIndex) => {
+        const [infoPart, consultingPartRaw] = courseBlock.split(')*');
+        const consultingPart = consultingPartRaw?.trim();
+
+        const [_, ...registerDetailsRaw] = infoPart
+          .split('*')
+          .map((p) => p.trim());
+
+        const registerDetails = registerDetailsRaw
+          .join('*')
+          .split(',')
+          .map((d) => d.trim())
+          .filter(Boolean);
+
+        const consultingDetails = consultingPart
+          ? consultingPart
+              .split(',')
+              .map((d) => d.trim())
+              .filter(Boolean)
+          : [];
+
+        const courseValues: Record<string, string> = {};
+
+        [...registerDetails, ...consultingDetails].forEach((detail) => {
+          const [label, ...rest] = detail.split(':');
+          const value = rest.join(':').trim();
+          courseValues[label.trim()] = value;
+        });
+
+        initialValues[courseIndex] = courseValues;
+      });
+
+    setFormValues(initialValues);
+  }, [item]);
+
+  const handleInputChange = (
+    courseIdx: number,
+    label: string,
+    value: string
+  ) => {
+    setFormValues((prev) => ({
+      ...prev,
+      [courseIdx]: {
+        ...(prev[courseIdx] || {}),
+        [label]: value,
+      },
+    }));
+  };
+
+  const [open, setOpen] = React.useState(false);
+
+  const handleSubmit = async () => {
+    const studentId = item.student_id;
+    const updates: {
+      courseTitle: string;
+      paymentStatus: string;
+      amountPaid: string;
+    }[] = [];
+
+    (item.enrolled_courses_details || '')
+      .split(';')
+      .filter(Boolean)
+      .forEach((courseBlock, courseIndex) => {
+        const [infoPart] = courseBlock.split(')*');
+        const [courseTitle, ...registerDetailsRaw] = infoPart
+          .split('*')
+          .map((p) => p.trim());
+
+        const registerDetails = registerDetailsRaw
+          .join('*')
+          .split(',')
+          .map((d) => d.trim())
+          .filter(Boolean);
+
+        const values = formValues[courseIndex] || {};
+
+        const paymentStatusLabel = values['Trạng thái thanh toán']?.trim();
+        const paymentStatusId = getPaymentStatusIdByLabel(paymentStatusLabel);
+
+        const amountPaid = values['Phí đã trả']?.trim() || '';
+
+        updates.push({
+          courseTitle,
+          paymentStatus: paymentStatusId || '', // nếu không có sẽ là ''
+          amountPaid,
+        });
+      });
+
+    try {
+      const res = await fetch(
+        'http://localhost:3000/api/updatedata/Studentenrollments',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ studentId, updates }),
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error('Server error');
+      }
+
+      const result = await res.json();
+      toast.success('Cập nhật thành công!');
+    } catch (error) {
+      toast.error('Lỗi khi gửi dữ liệu');
+    }
+
+    window.location.reload();
+  };
+
   return (
     <Drawer direction={isMobile ? 'bottom' : 'right'}>
       <DrawerTrigger asChild>
@@ -839,6 +1041,10 @@ function TableCellViewer({ item }: { item: z.infer<typeof tableSchema> }) {
                 />
               </div>
               <div className="flex flex-col gap-3">
+                <Label htmlFor="gender">Giới tính</Label>
+                <Input id="gender" defaultValue={item.gender || ''} />
+              </div>
+              <div className="flex flex-col gap-3">
                 <Label htmlFor="current_education_level">
                   Trình Độ Học Vấn
                 </Label>
@@ -866,28 +1072,28 @@ function TableCellViewer({ item }: { item: z.infer<typeof tableSchema> }) {
                 <Label htmlFor="current_status">Trạng Thái Hiện Tại</Label>
                 <Input id="current_status" defaultValue={item.current_status} />
               </div>
-              <div className="flex flex-col gap-3">
+              {/* <div className="flex flex-col gap-3">
                 <Label htmlFor="assigned_counselor_name">Tên Tư Vấn Viên</Label>
                 <Input
                   id="assigned_counselor_name"
                   defaultValue={item.assigned_counselor_name}
                 />
-              </div>
-              <div className="flex flex-col gap-3">
+              </div> */}
+              {/* <div className="flex flex-col gap-3">
                 <Label htmlFor="last_consultation_date">Ngày TV Gần Nhất</Label>
                 <Input
                   id="last_consultation_date"
                   defaultValue={item.last_consultation_date || ''}
                 />
-              </div>
-              <div className="flex flex-col gap-3">
+              </div> */}
+              {/* <div className="flex flex-col gap-3">
                 <Label htmlFor="last_consultation_notes">Ghi Chú TV</Label>
                 <Input
                   id="last_consultation_notes"
                   defaultValue={item.last_consultation_notes || ''}
                 />
-              </div>
-              <div className="flex flex-col gap-3">
+              </div> */}
+              {/* <div className="flex flex-col gap-3">
                 <Label htmlFor="interested_courses_details">
                   Khóa học quan tâm
                 </Label>
@@ -895,25 +1101,205 @@ function TableCellViewer({ item }: { item: z.infer<typeof tableSchema> }) {
                   id="interested_courses_details"
                   defaultValue={item.interested_courses_details || ''}
                 />
-              </div>
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="enrolled_courses_details">
-                  Khóa học đã đăng ký
-                </Label>
-                <Input
-                  id="enrolled_courses_details"
-                  defaultValue={item.enrolled_courses_details || ''}
-                />
-              </div>
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="gender">Giới tính</Label>
-                <Input id="gender" defaultValue={item.gender || ''} />
-              </div>
+              </div> */}
+            </div>
+            {/* <div className="flex flex-col gap-3">
+              <Label htmlFor="enrolled_courses_details">
+                Khóa học đã đăng ký
+              </Label>
+              <Input
+                id="enrolled_courses_details"
+                defaultValue={item.enrolled_courses_details || ''}
+              />
+            </div> */}
+            <div className="flex flex-col gap-5">
+              <Label className="text-base font-medium">
+                Khóa học đã đăng ký
+              </Label>
+
+              {(item.enrolled_courses_details || '')
+                .split(';')
+                .filter(Boolean)
+                .map((courseBlock, courseIndex) => {
+                  const [infoPart, consultingPartRaw] = courseBlock.split(')*');
+                  const consultingPart = consultingPartRaw?.trim();
+
+                  const [courseTitle, ...registerDetailsRaw] = infoPart
+                    .split('*')
+                    .map((p) => p.trim());
+
+                  const registerDetails = registerDetailsRaw
+                    .join('*')
+                    .split(',')
+                    .map((d) => d.trim())
+                    .filter(Boolean);
+
+                  const consultingDetails = consultingPart
+                    ? consultingPart
+                        .split(',')
+                        .map((d) => d.trim())
+                        .filter(Boolean)
+                    : [];
+
+                  const isOpen = openIndex === courseIndex;
+
+                  return (
+                    <div
+                      key={courseIndex}
+                      className="rounded border border-gray-300 bg-white shadow-sm"
+                    >
+                      {/* Tiêu đề + toggle */}
+                      <button
+                        type="button"
+                        onClick={() => toggleOpen(courseIndex)}
+                        className="w-full flex items-center justify-between px-3 py-2 bg-gray-100 rounded-t text-sm font-semibold"
+                      >
+                        <span>{courseTitle}</span>
+                        {isOpen ? (
+                          <ChevronDown size={18} />
+                        ) : (
+                          <ChevronRight size={18} />
+                        )}
+                      </button>
+
+                      {isOpen && (
+                        <div className="space-y-5 px-3 pb-3 pt-1">
+                          {/* Thông tin đăng ký */}
+                          <div className="flex flex-col gap-1">
+                            <Label className="block text-sm font-medium text-center text-blue-700">
+                              Thông tin đăng ký
+                            </Label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {registerDetails.map((detail, i) => {
+                                const [label, ...rest] = detail.split(':');
+                                const value = rest.join(':').trim();
+                                const labelKey = label.trim();
+                                const lowerLabel = labelKey.toLowerCase();
+
+                                const formValue =
+                                  formValues[courseIndex]?.[labelKey] ?? value;
+
+                                return (
+                                  <div key={i} className="flex flex-col gap-1">
+                                    <Label
+                                      htmlFor={`course_${courseIndex}_register_${i}`}
+                                      className="text-xs text-muted-foreground"
+                                    >
+                                      {labelKey}
+                                    </Label>
+
+                                    {lowerLabel === 'trạng thái thanh toán' ? (
+                                      <Select
+                                        value={getPaymentStatusIdByLabel(
+                                          formValue
+                                        )} // Convert label -> id
+                                        onValueChange={
+                                          (id) =>
+                                            handleInputChange(
+                                              courseIndex,
+                                              labelKey,
+                                              getPaymentStatusLabelById(id)
+                                            ) // Save label nếu muốn
+                                        }
+                                      >
+                                        <SelectTrigger
+                                          id={`course_${courseIndex}_register_${i}`}
+                                          className="w-full text-sm"
+                                        >
+                                          <SelectValue placeholder="Chọn trạng thái" />
+                                        </SelectTrigger>
+
+                                        <SelectContent>
+                                          {paymentStatusOptions.map(
+                                            (option) => (
+                                              <SelectItem
+                                                key={option.id}
+                                                value={option.id}
+                                              >
+                                                {option.label}
+                                              </SelectItem>
+                                            )
+                                          )}
+                                        </SelectContent>
+                                      </Select>
+                                    ) : (
+                                      <Input
+                                        id={`course_${courseIndex}_register_${i}`}
+                                        value={formValue}
+                                        onChange={(e) =>
+                                          handleInputChange(
+                                            courseIndex,
+                                            labelKey,
+                                            e.target.value
+                                          )
+                                        }
+                                        className="text-sm"
+                                        readOnly={lowerLabel !== 'phí đã trả'}
+                                        title={`${labelKey}: ${formValue}`}
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Thông tin tư vấn */}
+                          {consultingDetails.length > 0 && (
+                            <div className="flex flex-col gap-1">
+                              <Label className="block text-sm font-medium text-center text-green-700">
+                                Thông tin tư vấn
+                              </Label>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {consultingDetails.map((detail, i) => {
+                                  const [label, ...rest] = detail.split(':');
+                                  const value = rest.join(':').trim();
+                                  const labelKey = label.trim();
+                                  const formValue =
+                                    formValues[courseIndex]?.[labelKey] ??
+                                    value;
+
+                                  return (
+                                    <div
+                                      key={i}
+                                      className="flex flex-col gap-1"
+                                    >
+                                      <Label
+                                        htmlFor={`course_${courseIndex}_consulting_${i}`}
+                                        className="text-xs text-muted-foreground"
+                                      >
+                                        {labelKey}
+                                      </Label>
+                                      <Input
+                                        id={`course_${courseIndex}_consulting_${i}`}
+                                        value={formValue}
+                                        onChange={(e) =>
+                                          handleInputChange(
+                                            courseIndex,
+                                            labelKey,
+                                            e.target.value
+                                          )
+                                        }
+                                        className="text-sm"
+                                        readOnly
+                                        title={detail}
+                                      />
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
             </div>
           </form>
         </div>
         <DrawerFooter>
-          <Button>Gửi</Button>
+          <Button onClick={handleSubmit}>Gửi</Button>
           <DrawerClose asChild>
             <Button variant="outline">Đóng</Button>
           </DrawerClose>

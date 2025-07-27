@@ -1,5 +1,11 @@
 'use client';
-import React, { useState, useLayoutEffect, useRef } from 'react';
+import React, {
+  useState,
+  useLayoutEffect,
+  useRef,
+  useEffect,
+  ChangeEvent,
+} from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertButton } from '@/components/alertButton';
 
@@ -17,7 +23,7 @@ interface FormData {
   city: string;
   highSchoolName: string;
   programsSelected: string[];
-  infoSources: string;
+  infoSources: string[];
   otherInfoSource: string;
   consent: boolean;
   notificationConsent: string;
@@ -38,12 +44,78 @@ const initialFormData: FormData = {
   city: '',
   highSchoolName: '',
   programsSelected: [],
-  infoSources: '',
+  infoSources: [],
   otherInfoSource: '',
   consent: false,
   notificationConsent: '',
   otherNotificationConsent: '',
 };
+
+const provinces = [
+  'An Giang',
+  'Bà Rịa - Vũng Tàu',
+  'Bắc Giang',
+  'Bắc Kạn',
+  'Bạc Liêu',
+  'Bắc Ninh',
+  'Bến Tre',
+  'Bình Định',
+  'Bình Dương',
+  'Bình Phước',
+  'Bình Thuận',
+  'Cà Mau',
+  'Cần Thơ',
+  'Cao Bằng',
+  'Đà Nẵng',
+  'Đắk Lắk',
+  'Đắk Nông',
+  'Điện Biên',
+  'Đồng Nai',
+  'Đồng Tháp',
+  'Gia Lai',
+  'Hà Giang',
+  'Hà Nam',
+  'Hà Nội',
+  'Hà Tĩnh',
+  'Hải Dương',
+  'Hải Phòng',
+  'Hậu Giang',
+  'Hòa Bình',
+  'Hưng Yên',
+  'Khánh Hòa',
+  'Kiên Giang',
+  'Kon Tum',
+  'Lai Châu',
+  'Lâm Đồng',
+  'Lạng Sơn',
+  'Lào Cai',
+  'Long An',
+  'Nam Định',
+  'Nghệ An',
+  'Ninh Bình',
+  'Ninh Thuận',
+  'Phú Thọ',
+  'Phú Yên',
+  'Quảng Bình',
+  'Quảng Nam',
+  'Quảng Ngãi',
+  'Quảng Ninh',
+  'Quảng Trị',
+  'Sóc Trăng',
+  'Sơn La',
+  'Tây Ninh',
+  'Thái Bình',
+  'Thái Nguyên',
+  'Thanh Hóa',
+  'Thừa Thiên Huế',
+  'Tiền Giang',
+  'TP Hồ Chí Minh',
+  'Trà Vinh',
+  'Tuyên Quang',
+  'Vĩnh Long',
+  'Vĩnh Phúc',
+  'Yên Bái',
+];
 
 const RegistrationForm: React.FC = () => {
   const router = useRouter();
@@ -140,10 +212,14 @@ const RegistrationForm: React.FC = () => {
     }
 
     //Xử lý nhập nguồn
-    if (!formData.infoSources.trim()) {
+    if (formData.infoSources.length === 0) {
       newErrors.infoSources = 'Vui lòng chọn ít nhất một nguồn thông tin';
     }
-    if (formData.infoSources === 'Khác' && !formData.otherInfoSource.trim()) {
+
+    if (
+      formData.infoSources.includes('Khác') &&
+      !formData.otherInfoSource.trim()
+    ) {
       newErrors.otherInfoSource = 'Vui lòng ghi rõ mục khác';
     }
 
@@ -175,17 +251,35 @@ const RegistrationForm: React.FC = () => {
         }
         setFormData((prev) => ({ ...prev, programsSelected: newPrograms }));
       }
-      if (name === 'infoSources') {
-        if (checked) {
-          setFormData((prev) => ({ ...prev, infoSources: value }));
-        }
-      } else if (name === 'consent') {
-        setFormData((prev) => ({ ...prev, consent: checked }));
-      }
+      // if (name === 'infoSources') {
+      //   let updatedSources = [...formData.infoSources];
+      //   if (checked) {
+      //     if (!updatedSources.includes(value)) {
+      //       updatedSources.push(value);
+      //     }
+      //   } else {
+      //     updatedSources = updatedSources.filter((source) => source !== value);
+      //   }
+      //   setFormData((prev) => ({ ...prev, infoSources: updatedSources }));
+      // } else if (name === 'consent') {
+      //   setFormData((prev) => ({ ...prev, consent: checked }));
+      // }
     } else {
       // input text, radio, select, textarea
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
+  };
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const isChecked = e.target.checked;
+
+    setFormData((prevData) => {
+      const updatedSources = isChecked
+        ? [...prevData.infoSources, value]
+        : prevData.infoSources.filter((source) => source !== value);
+
+      return { ...prevData, infoSources: updatedSources };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -217,18 +311,17 @@ const RegistrationForm: React.FC = () => {
       }
     }
 
-    //-------------------------------------------------------
-    // Code API gửi mail tự động
-    try {
-      const emailResponse = await fetch(
-        'http://localhost:3000/api/uploadform/sendemail',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: formData.email,
-            subject: 'Cảm ơn bạn đã liên hệ với CUSC',
-            text: `Chào ${formData.fullName},
+    if (formData.notificationConsent === 'Đồng ý') {
+      try {
+        const emailResponse = await fetch(
+          'http://localhost:3000/api/uploadform/sendemail',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: formData.email,
+              subject: 'Cảm ơn bạn đã liên hệ với CUSC',
+              text: `Chào ${formData.fullName},
 
     CUSC xin chân thành cảm ơn bạn đã quan tâm và liên hệ với các khóa học của trung tâm.More actions
 
@@ -237,7 +330,7 @@ const RegistrationForm: React.FC = () => {
     Ngoài ra, bạn có thể liên hệ với chúng tôi qua Zalo để được tư vấn nhanh hơn.
 
     CUSC trân trọng cảm ơn.`,
-            html: `
+              html: `
           <!DOCTYPE html>
           <html lang="vi">
           <head>
@@ -270,20 +363,24 @@ const RegistrationForm: React.FC = () => {
           </body>
           </html>
         `,
-          }),
+            }),
+          }
+        );
+
+        const emailCheck = await emailResponse.json();
+
+        if (!emailResponse.ok) {
+          throw new Error(emailCheck.error || 'Lỗi gửi email');
         }
-      );
 
-      const emailCheck = await emailResponse.json();
-
-      if (!emailResponse.ok) {
-        throw new Error(emailCheck.error || 'Lỗi gửi email');
+        console.log('Email sent:', emailCheck.message);
+      } catch (err) {
+        console.error('Gửi email thất bại:', err);
       }
-
-      console.log('Email sent:', emailCheck.message);
-    } catch (err) {
-      console.error('Gửi email thất bại:', err);
     }
+
+    //-------------------------------------------------------
+    // Code API gửi mail tự động
 
     //-------------------------------------------------
     // API gửi trả API giới tính từ tên (tự xây dựng bẳng máy học)
@@ -348,7 +445,9 @@ const RegistrationForm: React.FC = () => {
             other_education_level_description: formData.otherUserType,
             high_school_name: formData.highSchoolName,
             city: formData.city,
-            source: formData.infoSources,
+            source: formData.infoSources
+              .filter((item) => item !== 'Khác')
+              .join(', '),
             other_source_description: formData.otherInfoSource,
             registration_date: now.toLocaleString(),
             interested_courses_details: `${courseName}`,
@@ -381,6 +480,55 @@ const RegistrationForm: React.FC = () => {
     }
   };
 
+  // const [filteredProvinces, setFilteredProvinces] = useState<string[]>([]);
+  // const [showDropdown, setShowDropdown] = useState(false);
+  // const inputRef = useRef<HTMLInputElement>(null);
+
+  // useEffect(() => {
+  //   if (!formData.city.trim()) {
+  //     setFilteredProvinces([]);
+  //   } else {
+  //     setFilteredProvinces(
+  //       provinces.filter((p) =>
+  //         p.toLowerCase().includes(formData.city.toLowerCase())
+  //       )
+  //     );
+  //   }
+  // }, [formData.city]);
+
+  const [inputValue, setInputValue] = useState('');
+  const [selectedProvince, setSelectedProvince] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value);
+    setShowDropdown(true);
+  };
+
+  const handleSelect = (province: string) => {
+    setInputValue(province);
+    setSelectedProvince(province);
+    setShowDropdown(false);
+  };
+
+  const filteredProvinces = provinces.filter((p) =>
+    p.toLowerCase().includes(inputValue.toLowerCase())
+  );
+
+  // Ẩn dropdown khi click ngoài
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   return (
     <form
       onSubmit={handleSubmit}
@@ -609,7 +757,7 @@ const RegistrationForm: React.FC = () => {
         </div>
 
         {/* Tỉnh/thành phố */}
-        <div className="mb-4">
+        {/* <div className="mb-4 relative">
           <label htmlFor="city" className="block font-medium">
             Tỉnh / Thành phố bạn đang sinh sống:
           </label>
@@ -618,16 +766,64 @@ const RegistrationForm: React.FC = () => {
             id="city"
             name="city"
             value={formData.city}
-            onChange={handleChange}
+            onChange={(e) => {
+              handleChange(e);
+              setShowDropdown(true);
+            }}
+            onFocus={() => setShowDropdown(true)}
+            // onBlur={() => setTimeout(() => setShowDropdown(false), 100)}
+            autoComplete="off"
             className="w-full mt-1 p-2 border rounded border-gray-300"
           />
+          {showDropdown && filteredProvinces.length > 0 && (
+            <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded mt-1 shadow max-h-60 overflow-y-auto">
+              {filteredProvinces.map((city, index) => (
+                <li
+                  key={index}
+                  onClick={() => {
+                    setFormData((prev) => ({ ...prev, city }));
+                    setShowDropdown(false);
+                  }}
+                  className="px-3 py-2 hover:bg-blue-100 cursor-pointer"
+                >
+                  {city}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div> */}
+        <div className="mb-4 relative" ref={dropdownRef}>
+          <label htmlFor="city" className="block font-medium">
+            Tỉnh / Thành phố bạn đang sinh sống:
+          </label>
+          <input
+            type="text"
+            value={inputValue}
+            onChange={handleInputChange}
+            className="w-full mt-1 p-2 border rounded border-gray-300"
+            onFocus={() => setShowDropdown(true)}
+          />
+
+          {showDropdown && filteredProvinces.length > 0 && (
+            <ul className="absolute z-10 w-full bg-gray-50 border border-gray-400 rounded mt-1 shadow max-h-60 overflow-y-auto">
+              {filteredProvinces.map((province, index) => (
+                <li
+                  key={index}
+                  onMouseDown={() => handleSelect(province)}
+                  className="px-3 py-2 hover:bg-blue-100 cursor-pointer"
+                >
+                  {province}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </fieldset>
       {/* IV. Bạn biết thông tin qua kênh nào */}
-      <fieldset className="border p-4 rounded">
-        <legend className="font-semibold mb-2">
-          III. Bạn biết thông tin qua kênh nào?{' '}
-          <span className="text-red-600">(Bắt buộc)</span>
+      {/* <fieldset className="border p-4 rounded">
+        <legend className="font-semibold mb-2"> */}
+      {/* III. Bạn biết thông tin qua kênh nào?*/}
+      {/* <span className="text-red-600">(Bắt buộc)</span>
         </legend>
 
         <div
@@ -651,9 +847,9 @@ const RegistrationForm: React.FC = () => {
         </div>
         {errors.infoSources && (
           <p className="text-red-600 text-sm mt-1">{errors.infoSources}</p>
-        )}
-        {/* Nếu chọn 'Khác' thì hiển thị input nhập thêm */}
-        {formData.infoSources === 'Khác' && (
+        )} */}
+      {/* Nếu chọn 'Khác' thì hiển thị input nhập thêm */}
+      {/* {formData.infoSources === 'Khác' && (
           <input
             type="text"
             name="otherInfoSource"
@@ -668,7 +864,60 @@ const RegistrationForm: React.FC = () => {
         {errors.otherInfoSource && (
           <p className="text-red-600 text-sm mt-1">{errors.otherInfoSource}</p>
         )}
+      </fieldset> */}
+
+      <fieldset className="border p-4 rounded">
+        <legend className="font-semibold mb-2">
+          III. Bạn biết thông tin qua kênh nào?{' '}
+          <span className="text-red-600">(Bắt buộc)</span>
+        </legend>
+
+        <div
+          className={`grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border p-2 rounded ${
+            errors.infoSources ? 'border-red-500' : 'border-gray-300'
+          }`}
+        >
+          {infoSourcesOptions.map((source) => (
+            <label key={source} className="inline-flex items-center space-x-2">
+              <input
+                type="checkbox"
+                name="infoSources"
+                value={source}
+                checked={formData.infoSources.includes(source)}
+                onChange={handleCheckboxChange}
+                className="form-checkbox"
+              />
+              <span>{source}</span>
+            </label>
+          ))}
+        </div>
+
+        {errors.infoSources && (
+          <p className="text-red-600 text-sm mt-1">{errors.infoSources}</p>
+        )}
+
+        {/* Nếu chọn 'Khác' thì hiển thị input nhập thêm */}
+        {formData.infoSources.includes('Khác') && (
+          <>
+            <input
+              type="text"
+              name="otherInfoSource"
+              value={formData.otherInfoSource}
+              onChange={handleChange}
+              placeholder="Vui lòng ghi rõ nguồn khác"
+              className={`mt-2 w-full p-2 border rounded ${
+                errors.otherInfoSource ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+            {errors.otherInfoSource && (
+              <p className="text-red-600 text-sm mt-1">
+                {errors.otherInfoSource}
+              </p>
+            )}
+          </>
+        )}
       </fieldset>
+
       {/* V. Đồng ý nhận thông báo */}
       <fieldset
         className={`border p-4 rounded ${
@@ -676,7 +925,7 @@ const RegistrationForm: React.FC = () => {
         }`}
       >
         <legend className="font-semibold mb-2">
-          IV. Đồng ý nhận thông báo từ CUSC qua email hoặc số điện thoại{' '}
+          IV. Đồng ý nhận thông báo từ CUSC qua email
           <span className="text-red-600">(Bắt buộc)</span>
         </legend>
         <div className="space-y-2 space-x-10">

@@ -75,11 +75,11 @@ export class UploadFormController {
         if (fsource === 'Khác') {
           fsource = 'Other';
         }
-        //Xu ly ngay dang ky theo dung mau
-        const parts = formData.registration_date.split(' ');
-        const [day, month, year] = parts[1].split('/').map(Number);
-        const currentDate = new Date(year, month - 1, day);
-        const curDate = new Date(currentDate);
+        // //Xu ly ngay dang ky theo dung mau
+        // const parts = formData.registration_date.split(' ');
+        // const [day, month, year] = parts[1].split('/').map(Number);
+        // const currentDate = new Date(year, month - 1, day);
+        // const curDate = new Date(currentDate);
 
         const inputData = {
           id: countId,
@@ -114,7 +114,7 @@ export class UploadFormController {
           current_status: 'Lead',
           assigned_counselor_id: userId?.id ?? 1,
           status_change_date: new Date(),
-          registration_date: curDate,
+          registration_date: new Date(),
           created_at: new Date(),
           updated_at: new Date(),
         };

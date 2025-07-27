@@ -2,7 +2,7 @@ import apiClient from '@/lib/axios.lib';
 
 // Interfaces cho return types
 interface ConsultationRadarData {
-  month: string;
+  // month: string;
   phoneCall: number;
   onlineMeeting: number;
   inPerson: number;
@@ -12,35 +12,35 @@ interface ConsultationRadarData {
 
 interface ConsultationChartData {
   chartData: ConsultationRadarData[];
-  config: {
-    phoneCall: {
-      label: string;
-      color: string;
-    };
-    onlineMeeting: {
-      label: string;
-      color: string;
-    };
-    inPerson: {
-      label: string;
-      color: string;
-    };
-    email: {
-      label: string;
-      color: string;
-    };
-    chat: {
-      label: string;
-      color: string;
-    };
-  };
+  // config: {
+  //   phoneCall: {
+  //     label: string;
+  //     color: string;
+  //   };
+  //   onlineMeeting: {
+  //     label: string;
+  //     color: string;
+  //   };
+  //   inPerson: {
+  //     label: string;
+  //     color: string;
+  //   };
+  //   email: {
+  //     label: string;
+  //     color: string;
+  //   };
+  //   chat: {
+  //     label: string;
+  //     color: string;
+  //   };
+  // };
 }
 
 interface ConsultationSummary {
   totalConsultations: number;
   averageDuration: number;
-  growthRate: string;
-  period: string;
+  // growthRate: string;
+  // period: string;
   trendingText: string;
 }
 
@@ -110,18 +110,20 @@ class DashboardAnalyticsApiService {
       const response = await apiClient.get<ApiResponse<DashboardOverview>>(
         `${this.baseEndpoint}/overview`
       );
-      
+
       if (response.data.status === 'success' && response.data.data) {
         return response.data.data;
       }
-      
-      throw new Error(response.data.message || 'Failed to fetch dashboard overview');
+
+      throw new Error(
+        response.data.message || 'Failed to fetch dashboard overview'
+      );
     } catch (error: any) {
       console.error('Error fetching dashboard overview:', error);
       throw new Error(
-        error.response?.data?.message || 
-        error.message || 
-        'Failed to fetch dashboard overview'
+        error.response?.data?.message ||
+          error.message ||
+          'Failed to fetch dashboard overview'
       );
     }
   }
@@ -135,22 +137,23 @@ class DashboardAnalyticsApiService {
     status?: 'Scheduled' | 'Completed' | 'Canceled' | 'No Show';
   }): Promise<ConsultationAnalyticsResult> {
     try {
-      const response = await apiClient.get<ApiResponse<ConsultationAnalyticsResult>>(
-        `${this.baseEndpoint}/consultations`,
-        { params }
-      );
-      
+      const response = await apiClient.get<
+        ApiResponse<ConsultationAnalyticsResult>
+      >(`${this.baseEndpoint}/consultations`, { params });
+
       if (response.data.status === 'success' && response.data.data) {
         return response.data.data;
       }
-      
-      throw new Error(response.data.message || 'Failed to fetch consultations data');
+
+      throw new Error(
+        response.data.message || 'Failed to fetch consultations data'
+      );
     } catch (error: any) {
       console.error('Error fetching consultations data:', error);
       throw new Error(
-        error.response?.data?.message || 
-        error.message || 
-        'Failed to fetch consultations data'
+        error.response?.data?.message ||
+          error.message ||
+          'Failed to fetch consultations data'
       );
     }
   }
@@ -163,22 +166,23 @@ class DashboardAnalyticsApiService {
     monthsBack?: number;
   }): Promise<CampaignAnalyticsResult> {
     try {
-      const response = await apiClient.get<ApiResponse<CampaignAnalyticsResult>>(
-        `${this.baseEndpoint}/campaigns`,
-        { params }
-      );
-      
+      const response = await apiClient.get<
+        ApiResponse<CampaignAnalyticsResult>
+      >(`${this.baseEndpoint}/campaigns`, { params });
+
       if (response.data.status === 'success' && response.data.data) {
         return response.data.data;
       }
-      
-      throw new Error(response.data.message || 'Failed to fetch campaign effectiveness data');
+
+      throw new Error(
+        response.data.message || 'Failed to fetch campaign effectiveness data'
+      );
     } catch (error: any) {
       console.error('Error fetching campaign effectiveness data:', error);
       throw new Error(
-        error.response?.data?.message || 
-        error.message || 
-        'Failed to fetch campaign effectiveness data'
+        error.response?.data?.message ||
+          error.message ||
+          'Failed to fetch campaign effectiveness data'
       );
     }
   }
@@ -199,29 +203,30 @@ class DashboardAnalyticsApiService {
     };
   }> {
     try {
-      const response = await apiClient.get<ApiResponse<{
-        sourceBreakdown: SourceBreakdown[];
-        topPerformingSources: SourceBreakdown[];
-        summary: {
-          totalSources: number;
-          period: string;
-        };
-      }>>(
-        `${this.baseEndpoint}/campaigns/sources`,
-        { params }
-      );
-      
+      const response = await apiClient.get<
+        ApiResponse<{
+          sourceBreakdown: SourceBreakdown[];
+          topPerformingSources: SourceBreakdown[];
+          summary: {
+            totalSources: number;
+            period: string;
+          };
+        }>
+      >(`${this.baseEndpoint}/campaigns/sources`, { params });
+
       if (response.data.status === 'success' && response.data.data) {
         return response.data.data;
       }
-      
-      throw new Error(response.data.message || 'Failed to fetch campaign source breakdown');
+
+      throw new Error(
+        response.data.message || 'Failed to fetch campaign source breakdown'
+      );
     } catch (error: any) {
       console.error('Error fetching campaign source breakdown:', error);
       throw new Error(
-        error.response?.data?.message || 
-        error.message || 
-        'Failed to fetch campaign source breakdown'
+        error.response?.data?.message ||
+          error.message ||
+          'Failed to fetch campaign source breakdown'
       );
     }
   }
@@ -239,26 +244,27 @@ class DashboardAnalyticsApiService {
     totalSources: number;
   }> {
     try {
-      const response = await apiClient.get<ApiResponse<{
-        topSources: SourceBreakdown[];
-        period: string;
-        totalSources: number;
-      }>>(
-        `${this.baseEndpoint}/campaigns/top-sources`,
-        { params }
-      );
-      
+      const response = await apiClient.get<
+        ApiResponse<{
+          topSources: SourceBreakdown[];
+          period: string;
+          totalSources: number;
+        }>
+      >(`${this.baseEndpoint}/campaigns/top-sources`, { params });
+
       if (response.data.status === 'success' && response.data.data) {
         return response.data.data;
       }
-      
-      throw new Error(response.data.message || 'Failed to fetch top performing sources');
+
+      throw new Error(
+        response.data.message || 'Failed to fetch top performing sources'
+      );
     } catch (error: any) {
       console.error('Error fetching top performing sources:', error);
       throw new Error(
-        error.response?.data?.message || 
-        error.message || 
-        'Failed to fetch top performing sources'
+        error.response?.data?.message ||
+          error.message ||
+          'Failed to fetch top performing sources'
       );
     }
   }
@@ -277,5 +283,5 @@ export type {
   ConsultationSummary,
   CampaignSummary,
   SourceBreakdown,
-  CampaignGaugeData
+  CampaignGaugeData,
 };

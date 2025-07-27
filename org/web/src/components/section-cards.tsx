@@ -33,6 +33,7 @@ export function SectionCards({
     endDate,
     enabled,
   });
+  const otherCounts = apiResponse?.data?.otherCounts;
 
   if (isLoading || !apiResponse) {
     return (
@@ -124,11 +125,11 @@ export function SectionCards({
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium items-center">
-            Có {statistics.consulting.count} mục đang tư vấn
+            Có {statistics.consulting.count} mục đang tương tác trong tháng
             {renderTrendIcon(statistics.consulting.trend)}
           </div>
           <div className="text-muted-foreground">
-            {statistics.consulting.description}
+            Tổng số lượng đang tương tác: {otherCounts?.engaging ?? 0}
           </div>
         </CardFooter>
       </Card>
@@ -146,11 +147,12 @@ export function SectionCards({
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium items-center">
-            Có {statistics.registration.count} mục đã đăng ký
+            Có {statistics.registration.count} học viên đã đăng ký
             {renderTrendIcon(statistics.registration.trend)}
           </div>
           <div className="text-muted-foreground">
-            {statistics.registration.description}
+            Có {otherCounts?.studentregister ?? 0} học viên đăng ký hơn 1 khóa
+            học
           </div>
         </CardFooter>
       </Card>
@@ -168,11 +170,11 @@ export function SectionCards({
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium items-center">
-            Có {statistics.potential.count} mục tiềm năng
+            Có {statistics.potential.count} mục tiềm năng trong tháng
             {renderTrendIcon(statistics.potential.trend)}
           </div>
           <div className="text-muted-foreground">
-            {statistics.potential.description}
+            Tổng số lượng đang tiềm năng: {otherCounts?.lead ?? 0}{' '}
           </div>
         </CardFooter>
       </Card>
@@ -209,6 +211,10 @@ export function SectionCards({
           </div>
         </CardFooter>
       </Card>
+      {/* <div className="grid grid-cols-1 gap-2 mt-4 text-sm text-muted-foreground lg:grid-cols-2 @5xl/main:grid-cols-4 px-4 lg:px-6">
+        <div>📝 Đăng ký: </div>
+        <div>📌 Đăng ký duy nhất: {otherCounts?.studentregisteronce ?? 0}</div>
+      </div> */}
     </div>
   );
 }

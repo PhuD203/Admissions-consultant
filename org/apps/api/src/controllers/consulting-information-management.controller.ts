@@ -19,13 +19,27 @@ import { authenticateToken } from '../middlewares/auth.middleware';
 @JsonController('/consulting-information-management')
 export class ConsultingInformationManagementController {
   @Get('')
+  @UseBefore(authenticateToken())
   async getAllUsers(
     @QueryParam('page') page: number = 1,
     @QueryParam('limit') limit: number = 10,
+    @Req() req: Request, // Thêm decorator @Req để truy cập request object
     @Res() res: any
   ) {
     try {
-      const users = await groupService.getAllConsultingInformation(page, limit);
+      const counselorId = req.user?.id;
+
+      if (typeof counselorId !== 'number' || isNaN(counselorId)) {
+        return res
+          .status(400)
+          .json(jsend.fail('Invalid or missing counselor ID in user token.'));
+      }
+
+      const users = await groupService.getAllConsultingInformation(
+        page,
+        limit,
+        counselorId
+      );
       if (users === null) {
         return res.json(
           jsend.error(

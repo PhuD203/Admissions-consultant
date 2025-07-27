@@ -1,18 +1,12 @@
 // src/app/page.tsx
-"use client"
+'use client';
 
-import * as React from "react"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/components/ui/sidebar"
-import CourseCreationForm from "@/components/course" // Correct path for your component
-import {
-  QueryClient,
-  QueryClientProvider,
-} from '@tanstack/react-query'; // Import QueryClient and QueryClientProvider
+import * as React from 'react';
+import { AppSidebar } from '@/components/app-sidebar';
+import { SiteHeader } from '@/components/site-header';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import CourseCreationForm from '@/components/course'; // Correct path for your component
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'; // Import QueryClient and QueryClientProvider
 
 // Create a client
 const queryClient = new QueryClient();
@@ -24,8 +18,8 @@ export default function Page() {
       <SidebarProvider
         style={
           {
-            "--sidebar-width": "calc(var(--spacing) * 72)",
-            "--header-height": "calc(var(--spacing) * 12)",
+            '--sidebar-width': 'calc(var(--spacing) * 72)',
+            '--header-height': 'calc(var(--spacing) * 12)',
           } as React.CSSProperties
         }
       >
@@ -42,5 +36,5 @@ export default function Page() {
         </SidebarInset>
       </SidebarProvider>
     </QueryClientProvider>
-  )
+  );
 }

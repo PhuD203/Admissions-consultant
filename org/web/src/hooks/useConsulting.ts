@@ -32,23 +32,25 @@ export const useConsultingList = (
   });
 };
 
-export const useAllConsultingList = (
-  page: number = 1,
-  limit: number = 10
-) => {
+export const useAllConsultingList = (page: number = 1, limit: number = 10) => {
   return useQuery<ConsultingApiResponse, Error>({
     queryKey: ['allConsultingList', page, limit],
     queryFn: async () => {
-      console.log(`useAllConsultingList: Fetching data for page ${page}, limit ${limit}`);
-      
-      const response = await consultingService.getConsultingInformation(page, limit);
+      console.log(
+        `useAllConsultingList: Fetching data for page ${page}, limit ${limit}`
+      );
+
+      const response = await consultingService.getConsultingInformation(
+        page,
+        limit
+      );
       const parsedResponse = consultingApiResponseSchema.parse(response);
-      
+
       return parsedResponse;
     },
-    
+
     placeholderData: (previousData) => previousData,
-    staleTime: 5 * 60 * 1000, 
+    staleTime: 5 * 60 * 1000,
   });
 };
 
@@ -94,11 +96,20 @@ export const useConsultingHistoryList = (
         const parsed = consultingApiResponseSchemaHistory.parse(response);
         return parsed;
       } catch (error) {
-        console.error('Validation error details:', error);
-        // More specific error message
-        throw new Error(
-          'Dữ liệu trả về không khớp với định dạng mong đợi. Vui lòng kiểm tra console để biết chi tiết.'
-        );
+        console.warn('Validation error:', error);
+        return {
+          data: {
+            metadata: {
+              totalRecords: 0,
+              firstPage: 1,
+              lastPage: 1,
+              page,
+              limit,
+            },
+            consultationHistory: [],
+          },
+          status: 'error',
+        };
       }
     },
     placeholderData: (previousData) => previousData,

@@ -59,7 +59,7 @@ class StudentService {
       });
     } catch (e) {
       console.error('Error in StudentService.deleteStudent:', e);
-      throw e; 
+      throw e;
     }
   }
 
@@ -191,7 +191,7 @@ class StudentService {
             },
             select: {
               id: true,
-              name: true, 
+              name: true,
               program_type: true,
             },
           });
@@ -411,7 +411,7 @@ class StudentService {
           newStudent.other_education_level_description || 'Không có',
         high_school_name: newStudent.high_school_name || null,
         city: newStudent.city || null,
-        source: newStudent.source,
+        source: newStudent.source || '',
         notification_consent: newStudent.notification_consent,
         current_status: newStudent.current_status,
         status_change_date: newStudent.status_change_date
@@ -425,7 +425,7 @@ class StudentService {
         assigned_counselor_name: conselor_name || null,
         assigned_counselor_type: assigned_counselor_type || null,
         interested_courses_details: interested_courses_details || null,
-        enrolled_courses_details: null, 
+        enrolled_courses_details: null,
         student_status_history: varStudentstatushistory
           ? `Từ: ${varStudentstatushistory.old_status || 'null'} Đến: ${
               varStudentstatushistory.new_status

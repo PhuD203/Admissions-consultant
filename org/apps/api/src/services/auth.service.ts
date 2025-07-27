@@ -44,6 +44,10 @@ class AuthService {
       throw new Error('Email hoặc mật khẩu không đúng.');
     }
 
+    if (user.status !== 'active') {
+      throw new Error('Tài khoản đã bị khóa');
+    }
+
     const isPasswordValid = await bcrypt.compare(
       loginData.password,
       user.password_hash
@@ -322,7 +326,8 @@ class AuthService {
   }
 
   // --- Thay đổi ở đây: Quan trọng nhất ---
-  private generateTokens(id: number): { // Đổi userId thành id
+  private generateTokens(id: number): {
+    // Đổi userId thành id
     accessToken: string;
     refreshToken: string;
   } {

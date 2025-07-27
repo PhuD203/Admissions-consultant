@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = env("DATABASE_URL")
+  url      = "mysql://root:@localhost:3306/cusc_student_management"
 }
 
 model users {
@@ -149,7 +149,7 @@ model students {
   other_education_level_description      String?                          @db.VarChar(255)
   high_school_name                       String?                          @db.VarChar(255)
   city                                   String?                          @db.VarChar(100)
-  source                                 students_source
+  source                                 String?                          @db.VarChar(255)
   other_source_description               String?                          @db.VarChar(255)
   notification_consent                   students_notification_consent
   other_notification_consent_description String?                          @db.VarChar(255)
@@ -266,21 +266,7 @@ enum students_current_education_level {
   Other
 }
 
-enum students_source {
-  Mail
-  Fanpage
-  Zalo
-  Website
-  Friend
-  SMS
-  Banderole
-  Poster
-  Brochure
-  Google
-  Brand
-  Event
-  Other
-}
+
 
 enum students_notification_consent {
   Agree

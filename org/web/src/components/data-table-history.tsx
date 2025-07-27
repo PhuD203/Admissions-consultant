@@ -3,6 +3,8 @@
 import * as React from 'react';
 import { useCallback } from 'react';
 import { z } from 'zod';
+import { IconPlus } from '@tabler/icons-react';
+
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -431,40 +433,83 @@ const TableControls = <TData,>({
   </div>
 );
 
+const handleExport = async () => {
+  try {
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
+      console.error('⚠️ Chưa có access token trong localStorage');
+      return;
+    }
+
+    const res = await fetch(
+      'http://localhost:3000/api/exportexcel/consultationsessionsData',
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      return;
+    }
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Danh_sach_lich_su_tu_van.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error(err);
+  }
+};
+
 // Column visibility dropdown component
 const ColumnVisibilityDropdown = <TData,>({
   table,
 }: {
   table: TanstackTable<TData>;
 }) => (
-  <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <Button variant="outline" size="sm">
-        <ColumnsIcon />
-        <span className="hidden lg:inline">Tùy Chỉnh Cột</span>
-        <span className="lg:hidden">Cột</span>
-        <ChevronDownIcon />
-      </Button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" className="w-56">
-      {table
-        .getAllColumns()
-        .filter(
-          (column) =>
-            typeof column.accessorFn !== 'undefined' && column.getCanHide()
-        )
-        .map((column) => (
-          <DropdownMenuCheckboxItem
-            key={column.id}
-            className="capitalize"
-            checked={column.getIsVisible()}
-            onCheckedChange={(value) => column.toggleVisibility(value)}
-          >
-            {columnDisplayNames[column.id] || column.id}
-          </DropdownMenuCheckboxItem>
-        ))}
-    </DropdownMenuContent>
-  </DropdownMenu>
+  <div>
+    {' '}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm">
+          <ColumnsIcon />
+          <span className="hidden lg:inline">Tùy Chỉnh Cột</span>
+          <span className="lg:hidden">Cột</span>
+          <ChevronDownIcon />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        {table
+          .getAllColumns()
+          .filter(
+            (column) =>
+              typeof column.accessorFn !== 'undefined' && column.getCanHide()
+          )
+          .map((column) => (
+            <DropdownMenuCheckboxItem
+              key={column.id}
+              className="capitalize"
+              checked={column.getIsVisible()}
+              onCheckedChange={(value) => column.toggleVisibility(value)}
+            >
+              {columnDisplayNames[column.id] || column.id}
+            </DropdownMenuCheckboxItem>
+          ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+    <Button variant="outline" size="sm" onClick={handleExport}>
+      <IconPlus />
+      <span className="hidden lg:inline">Xuất ra Excel</span>
+    </Button>
+  </div>
 );
 
 // Reusable pagination component

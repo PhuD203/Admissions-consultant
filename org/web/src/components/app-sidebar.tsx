@@ -8,7 +8,7 @@ import {
   IconDatabase,
   IconFileAi,
   IconFileDescription,
-  IconFileWord,
+  IconPasswordUser,
   IconFolder,
   IconHelp,
   IconInnerShadowTop,
@@ -17,6 +17,7 @@ import {
   IconSearch,
   IconSettings,
   IconUsers,
+  IconFileArrowRight,
 } from '@tabler/icons-react';
 
 import { NavDocuments } from '@/components/nav-documents';
@@ -33,12 +34,20 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 
+interface User {
+  name: string;
+  email: string;
+  avatar: string;
+  user_type: string;
+}
+
 const data = {
-  user: {
-    name: 'admin',
-    email: 'm@example.com',
-    avatar: '/avatars/shadcn.jpg',
-  },
+  // user: {
+  //   name: 'Tran Nguyen Ngoc Tram',
+  //   email: 'm@example.com',
+  //   avatar: '/avatars/shadcn.jpg',
+  //   user_type: 'admin',
+  // },
   navMain: [
     {
       title: 'Quản lý thông tin tư vấn',
@@ -52,7 +61,7 @@ const data = {
     },
     {
       title: 'Thống kê & báo cáo',
-      url: '/report',
+      url: '/statistical',
       icon: IconChartBar,
     },
   ],
@@ -133,14 +142,87 @@ const data = {
       icon: IconReport,
     },
     {
-      name: 'Hỗ trợ nhanh',
-      url: '#',
-      icon: IconFileWord,
+      name: 'Xuất file đăng ký',
+      url: '/exportpdf',
+      icon: IconFileArrowRight,
+    },
+    {
+      name: 'Quản lý tài khoản đăng nhập',
+      url: '/users',
+      icon: IconPasswordUser,
     },
   ],
 };
 
+// let user: User | null = null;
+
+export async function fetchUserOnce(): Promise<User | null> {
+  // Nếu đã có trong localStorage thì trả về luôn
+  // const cachedUser = localStorage.getItem('cachedUser');
+  // if (cachedUser) {
+  //   return JSON.parse(cachedUser) as User;
+  // }
+
+  const accessToken = localStorage.getItem('accessToken');
+  if (!accessToken) {
+    console.error('⚠️ Chưa có access token trong localStorage');
+    return null;
+  }
+
+  try {
+    const res = await fetch('http://localhost:3000/api/data/UserInfoLogin', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await res.json();
+    const userData = data?.data?.users;
+
+    if (!userData) {
+      console.error('❌ Không tìm thấy user trong response');
+      return null;
+    }
+
+    const user: User = {
+      name: userData.full_name,
+      email: userData.email,
+      user_type: userData.user_type,
+      avatar: '/avatars/shadcn.jpg',
+    };
+
+    // ✅ Lưu lại vào localStorage để tái sử dụng
+    if (!userData?.user_type) {
+      console.error('❌ Không tìm thấy user_type trong userData');
+      return null;
+    }
+    localStorage.setItem('cachedUserType', userData.user_type);
+    // localStorage.setItem('cachedUser', JSON.stringify(user));
+
+    return user;
+  } catch (err) {
+    console.error('❌ Failed to fetch user info', err);
+    return null;
+  }
+}
+
+// Gọi khi load trang (chỉ chạy 1 lần nếu chưa có user)
+// window.addEventListener('DOMContentLoaded', fetchUserOnce);
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [user, setUser] = React.useState<User | null>(null);
+
+  React.useEffect(() => {
+    const loadUser = async () => {
+      const data = await fetchUserOnce();
+      if (data) setUser(data);
+    };
+
+    if (!user) loadUser();
+  }, [user]);
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -160,12 +242,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
+        <NavDocuments
+          items={
+            user?.user_type !== 'counselor'
+              ? data.documents
+              : data.documents.filter(
+                  (doc) => doc.name !== 'Quản lý tài khoản đăng nhập'
+                )
+          }
+        />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={data.user} />
-      </SidebarFooter>
+      <SidebarFooter>{user && <NavUser user={user} />}</SidebarFooter>
     </Sidebar>
   );
 }

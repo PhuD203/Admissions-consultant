@@ -3,6 +3,12 @@
 import * as React from 'react';
 import Search from './search';
 import { useCallback } from 'react';
+import { useRef } from 'react';
+import { ChevronDown } from 'lucide-react';
+
+import { getCourses } from '../data/data_course';
+import { getUsers } from '../data/data_user';
+import { IconPlus } from '@tabler/icons-react';
 import {
   DndContext,
   KeyboardSensor,
@@ -22,6 +28,8 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'; // Changed from @dnd-kit/utilities
 import { CSS } from '@dnd-kit/utilities'; // This is still correct for CSS utility
+import { Check } from 'lucide-react';
+
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -139,6 +147,72 @@ interface DataTableProps {
   isUpdating?: boolean;
 }
 
+//Khai báo các mảng dữ liệu
+const provinces = [
+  'An Giang',
+  'Bà Rịa - Vũng Tàu',
+  'Bắc Giang',
+  'Bắc Kạn',
+  'Bạc Liêu',
+  'Bắc Ninh',
+  'Bến Tre',
+  'Bình Định',
+  'Bình Dương',
+  'Bình Phước',
+  'Bình Thuận',
+  'Cà Mau',
+  'Cần Thơ',
+  'Cao Bằng',
+  'Đà Nẵng',
+  'Đắk Lắk',
+  'Đắk Nông',
+  'Điện Biên',
+  'Đồng Nai',
+  'Đồng Tháp',
+  'Gia Lai',
+  'Hà Giang',
+  'Hà Nam',
+  'Hà Nội',
+  'Hà Tĩnh',
+  'Hải Dương',
+  'Hải Phòng',
+  'Hậu Giang',
+  'Hòa Bình',
+  'Hưng Yên',
+  'Khánh Hòa',
+  'Kiên Giang',
+  'Kon Tum',
+  'Lai Châu',
+  'Lâm Đồng',
+  'Lạng Sơn',
+  'Lào Cai',
+  'Long An',
+  'Nam Định',
+  'Nghệ An',
+  'Ninh Bình',
+  'Ninh Thuận',
+  'Phú Thọ',
+  'Phú Yên',
+  'Quảng Bình',
+  'Quảng Nam',
+  'Quảng Ngãi',
+  'Quảng Ninh',
+  'Quảng Trị',
+  'Sóc Trăng',
+  'Sơn La',
+  'Tây Ninh',
+  'Thái Bình',
+  'Thái Nguyên',
+  'Thanh Hóa',
+  'Thừa Thiên Huế',
+  'Tiền Giang',
+  'TP Hồ Chí Minh',
+  'Trà Vinh',
+  'Tuyên Quang',
+  'Vĩnh Long',
+  'Vĩnh Phúc',
+  'Yên Bái',
+];
 const columnNamesMap: {
   current_education_level: string;
   current_status: string;
@@ -147,6 +221,7 @@ const columnNamesMap: {
   last_consultation_date: string;
   source: string;
   assigned_counselor_name: string;
+
   [key: string]: string;
 } = {
   current_education_level: 'Trình độ học vấn',
@@ -157,6 +232,43 @@ const columnNamesMap: {
   source: 'Nguồn',
   assigned_counselor_name: 'Người tư vấn',
 };
+
+interface Counselor {
+  id: string;
+  full_name: string;
+}
+
+////////////////////////////////////////////////////////
+type HandleSelectOptions = {
+  multiple?: boolean;
+  selected: string | string[];
+  setSelected: (value: any) => void;
+  setInputValue?: (value: string) => void;
+  setShowDropdown?: (value: boolean) => void;
+};
+
+const handleSelect = (
+  item: string,
+  {
+    multiple = false,
+    selected,
+    setSelected,
+    setInputValue,
+    setShowDropdown,
+  }: HandleSelectOptions
+) => {
+  if (multiple) {
+    if (Array.isArray(selected) && !selected.includes(item)) {
+      setSelected([...selected, item]);
+    }
+    setInputValue?.('');
+  } else {
+    setSelected(item);
+    setInputValue?.(item);
+    setShowDropdown?.(false);
+  }
+};
+
 // Create a separate component for the drag handle
 function DragHandle({ id }: { id: number }) {
   const { attributes, listeners } = useSortable({
@@ -281,9 +393,9 @@ const columns: ColumnDef<ConsultingTableRow>[] = [
               <DropdownMenuRadioItem value="Thôi học">
                 Đã ngừng
               </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="Lưu trữ">
+              {/* <DropdownMenuRadioItem value="Lưu trữ">
                 Đã lưu trữ
-              </DropdownMenuRadioItem>
+              </DropdownMenuRadioItem> */}
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -324,8 +436,16 @@ const columns: ColumnDef<ConsultingTableRow>[] = [
     header: 'Ngày tư vấn gần nhất',
     cell: ({ row }) => {
       // Hàm kiểm tra ngày tư vấn gần nhất
-      const isConsultationOverdue = (lastConsultationDate: any) => {
-        if (!lastConsultationDate) return false;
+      const isConsultationOverdue = (
+        lastConsultationDate: any,
+        currentStatus: string
+      ) => {
+        if (
+          !lastConsultationDate ||
+          currentStatus === 'Thôi học' ||
+          currentStatus === 'Đã đăng ký'
+        )
+          return false;
 
         const today = new Date();
         const consultationDate = new Date(lastConsultationDate);
@@ -336,8 +456,15 @@ const columns: ColumnDef<ConsultingTableRow>[] = [
       };
 
       const isOverdue = isConsultationOverdue(
-        row.original.last_consultation_date
+        row.original.last_consultation_date,
+        row.original.current_status
       );
+
+      // Hàm kiểm tra ngày tư vấn gần nhất
+      // const isDroppeOut = row.original.current_status === 'Thôi học';
+
+      // const isDroppeOut = row.original.current_status === 'Thôi học';
+      // console.log(isOverdue);
       const formattedDate = row.original.last_consultation_date || 'Chưa có';
 
       return (
@@ -346,7 +473,8 @@ const columns: ColumnDef<ConsultingTableRow>[] = [
             isOverdue
               ? 'text-red-600 font-medium bg-red-50 px-2 py-1 rounded dark:text-red-400 dark:bg-red-950'
               : 'text-foreground'
-          }`}
+          }
+         `}
         >
           {formattedDate}
         </span>
@@ -372,13 +500,13 @@ const columns: ColumnDef<ConsultingTableRow>[] = [
 
       return (
         <>
-          <Label
+          {/* <Label
             htmlFor={`${row.original.student_id}-counselor`}
             className="sr-only"
           >
             Người Tư Vấn
-          </Label>
-          <Select>
+          </Label> */}
+          {/* <Select>
             <SelectTrigger
               className="h-8 w-40"
               id={`${row.original.student_id}-counselor`}
@@ -389,7 +517,7 @@ const columns: ColumnDef<ConsultingTableRow>[] = [
               <SelectItem value="Trần Thị B">Trần Thị B</SelectItem>
               <SelectItem value="Lê Văn C">Lê Văn C</SelectItem>
             </SelectContent>
-          </Select>
+          </Select> */}
         </>
       );
     },
@@ -504,6 +632,7 @@ export function DataTable({
     () => data?.map(({ student_id }) => student_id) || [],
     [data]
   );
+  const [open, setOpen] = React.useState(false);
 
   const table = useReactTable({
     data: serverData, // Sử dụng dữ liệu trực tiếp từ props (đã được fetch theo trang)
@@ -569,6 +698,45 @@ export function DataTable({
     }
   }
 
+  const handleExport = async () => {
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        console.error('⚠️ Chưa có access token trong localStorage');
+        return;
+      }
+
+      const res = await fetch(
+        'http://localhost:3000/api/exportexcel/studentData',
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        toast.error('Lỗi khi lấy dữ liệu!');
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Danh_sach_sinh_vien_tu_van.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Đã tải file thành công!');
+    } catch (err) {
+      toast.error('Lỗi khi export!');
+      console.error(err);
+    }
+  };
+
   return (
     <Tabs
       defaultValue="overview"
@@ -631,9 +799,9 @@ export function DataTable({
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="outline" size="sm">
-            <PlusIcon />
-            <span className="hidden lg:inline">Thêm Sinh Viên</span>
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <IconPlus />
+            <span className="hidden lg:inline">Xuất ra Excel</span>
           </Button>
         </div>
       </div>
@@ -779,9 +947,6 @@ export function DataTable({
   );
 }
 
-
-
-
 const filterEmptyValues = (obj: Record<string, any>) => {
   const filtered: Record<string, any> = {};
   for (const key in obj) {
@@ -813,7 +978,31 @@ function TableCellViewer({
     setInitialData(item);
     resetForm(item);
   }, [item]);
-  
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setShowSources(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const toggleSource = (value: string) => {
+    setSource((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+    );
+  };
+  const [Student_id, setStudent_id] = React.useState(item.student_id);
+
   const [studentName, setStudentName] = React.useState(item.student_name);
   const [email, setEmail] = React.useState(item.email ?? '');
   const [phoneNumber, setPhoneNumber] = React.useState(item.phone_number);
@@ -833,7 +1022,13 @@ function TableCellViewer({
     item.high_school_name ?? ''
   );
   const [city, setCity] = React.useState(item.city);
-  const [source, setSource] = React.useState(item.source);
+  const [other_source_description, setOther_source_description] =
+    React.useState(item.other_source_description ?? '');
+  const [
+    other_notification_consent_description,
+    setOther_notification_consent_description,
+  ] = React.useState(item.other_notification_consent_description ?? '');
+  // const [source, setSource] = React.useState(item.source);
   const [notificationConsent, setNotificationConsent] = React.useState(
     item.notification_consent
   );
@@ -846,8 +1041,9 @@ function TableCellViewer({
   >(item.registration_date ? new Date(item.registration_date) : undefined);
   // student_created_at and student_updated_at are read-only, no need for useState if not modified by user
   const [assignedCounselorName, setAssignedCounselorName] = React.useState(
-    item.assigned_counselor_name
+    item.assigned_counselor_id ?? ''
   );
+
   const [assignedCounselorType, setAssignedCounselorType] = React.useState(
     item.assigned_counselor_type
   );
@@ -887,8 +1083,52 @@ function TableCellViewer({
     React.useState(false);
   const [showEnrolledCourses, setShowEnrolledCourses] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
+  const [isError, setisError] = React.useState(false);
+
   const sheetCloseRef = React.useRef<HTMLButtonElement>(null);
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
+  const [source, setSource] = React.useState<string[]>([]);
+  const [showSources, setShowSources] = React.useState(false); // mở mặc định
+  const [otherNotificationConsent, setOtherNotificationConsent] =
+    React.useState('');
+
+  const [selectedProvince, setSelectedProvince] = React.useState('');
+  const [showDropdown, setShowDropdown] = React.useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCity(e.target.value);
+    setShowDropdown(true);
+  };
+
+  // const handleSelectProvince = (province: string) => {
+  //   handleSelectGeneric(
+  //     province,
+  //     [selectedProvince], // selectedList
+  //     (val) => setSelectedProvince(val[0]), // setSelectedList (chọn 1)
+  //     false, // allowMultiple
+  //     setCity, // set input
+  //     setShowDropdown // ẩn dropdown
+  //   );
+  // };
+
+  const filteredProvinces = provinces.filter((p) =>
+    p.toLowerCase().includes(city.toLowerCase())
+  );
+
+  // Ẩn dropdown khi click ngoài
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleCloseSheet = () => {
     setIsSheetOpen(false);
@@ -908,7 +1148,11 @@ function TableCellViewer({
     );
     setHighSchoolName(data.high_school_name ?? '');
     setCity(data.city);
-    setSource(data.source);
+    setOther_source_description(data.other_source_description ?? '');
+    setOther_notification_consent_description(
+      data.other_notification_consent_description ?? ''
+    );
+    setSource(data.source.split(',').map((s) => s.trim()));
     setNotificationConsent(data.notification_consent);
     setCurrentStatus(data.current_status);
     setStatusChangeDate(
@@ -1066,11 +1310,14 @@ function TableCellViewer({
             </Button>
           </div>
           {show && (
-            <div className="border rounded-md p-3 bg-muted/20">
+            <div
+              className="border rounded-md p-3 bg-muted/20 overflow-y-auto"
+              style={{ maxHeight: '6.0rem', lineHeight: '1.5rem' }} // giới hạn 5 dòng
+            >
               {onContentChange && !readOnly ? (
                 <textarea
                   id={id}
-                  className="w-full h-24 p-2 bg-transparent text-sm text-muted-foreground resize-y focus:outline-none"
+                  className="w-full min-h-[6rem] p-2 bg-transparent text-sm text-muted-foreground resize-y focus:outline-none"
                   value={content ?? ''}
                   onChange={(e) => onContentChange(e.target.value)}
                   placeholder={`Nhập ${label.toLowerCase()}...`}
@@ -1190,7 +1437,7 @@ function TableCellViewer({
 
     try {
       backendCurrentEducationLevel = currentEducationLevel;
-      backendSource = source;
+      backendSource = source.length > 0 ? source.join(', ') : undefined;
       backendNotificationConsent = notificationConsent
         ? getBackendNotifi(notificationConsent)
         : undefined;
@@ -1224,6 +1471,9 @@ function TableCellViewer({
       high_school_name: highSchoolName || undefined,
       city: city,
       source: backendSource,
+      other_source_description: other_source_description,
+      other_notification_consent_description:
+        other_notification_consent_description,
       notification_consent: backendNotificationConsent,
       current_status: backendCurrentStatus,
       status_change_date: statusChangeDate
@@ -1276,16 +1526,238 @@ function TableCellViewer({
 
     try {
       await onUpdate(item.student_id, changedData);
+      // console.log(updateStudent);
+      // }
+      // const updateStudent = await onUpdate(item.student_id, changedData);
+      // const hasChanged =
+      //   (lastConsultationDate &&
+      //     format(lastConsultationDate, 'yyyy-MM-dd') !==
+      //       (item.last_consultation_date
+      //         ? format(new Date(item.last_consultation_date), 'yyyy-MM-dd')
+      //         : '')) ||
+      //   Number(lastConsultationDurationMinutes || 0) !==
+      //     (item.last_consultation_duration_minutes || 0) ||
+      //   (lastConsultationNotes || '') !==
+      //     (item.last_consultation_notes || '') ||
+      //   lastConsultationType !== item.last_consultation_type ||
+      //   lastConsultationStatus !== item.last_consultation_status;
+
+      if (
+        isEditing &&
+        (lastConsultationStatus === '' ||
+          lastConsultationType === '' ||
+          lastConsultationDurationMinutes === '' ||
+          Number(lastConsultationDurationMinutes) < 0)
+      ) {
+        setisError(true);
+      } else if (isEditing) {
+        await fetch('http://localhost:3000/api/updatedata/RegisterCourse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            student_id: Student_id,
+            selectedCoursesRegister: selectedCoursesRegister,
+            last_consultation_counselor_name: countName,
+            last_consultation_date: lastConsultationDate,
+            last_consultation_type: getBackendConsultType(lastConsultationType),
+            last_consultation_status: getBackendConsultSession(
+              lastConsultationStatus
+            ),
+            last_consultation_notes: lastConsultationNotes,
+            last_consultation_duration_minutes: lastConsultationDurationMinutes,
+          }),
+        });
+      }
+
+      // if (hasChanged) {
+      // }
+
+      // if (updateStudent) {
+
+      // }
+
+      if (selectedCourses && selectedCourses.length > 0) {
+        // Không có khóa học nào được chọn
+        await fetch('http://localhost:3000/api/updatedata/InteresCourse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            // counselor_id: assignedCounselorId || null,
+            student_id: Student_id,
+            selectedCourses: selectedCourses,
+            // bạn có thể thêm các trường khác nếu cần
+          }),
+        });
+      }
+
+      const hasChanged = assignedCounselorName !== countName;
+      if (hasChanged) {
+        await fetch('http://localhost:3000/api/updatedata/AssignCounselor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            student_id: Student_id,
+            assignedCounselorName: assignedCounselorName,
+            last_consultation_counselor_name: countName,
+            current_status: getBackendStatus(item.current_status),
+            // bạn có thể thêm các trường khác nếu cần
+          }),
+        });
+      }
+
       if (sheetCloseRef.current) {
         sheetCloseRef.current.click();
       }
+      // if (!isError) {
+      // }
       setIsSuccess(true);
+      setTimeout(() => setIsSuccess(false), 2000);
+      setTimeout(() => setisError(false), 2000);
 
-      setTimeout(() => setIsSuccess(false), 3000);
+      setSelectedCourses([]); // <-- reset danh sách
+      setShowInput(false); // <-- đóng input lại
+      setShowInterestedCourses(false);
+      setSelectedCoursesRegister([]); // <-- reset danh sách
+      setShowInputRegister(false); // <-- đóng input lại
+      setShowEnrolledCourses(false);
+      setIsEditing(false);
     } catch (error) {
       console.error('Lỗi khi cập nhật:', error);
     }
   };
+  // const handleAddCourse = () => {
+  //   const trimmed = newCourse.trim();
+  //   if (trimmed && !interestedCourses.includes(trimmed)) {
+  //     setInterestedCourses([...interestedCourses, trimmed]);
+  //     setNewCourse('');
+  //     setShowInput(false);
+  //   }
+  // };
+
+  ////////////////////////////////////////////////////////////////////////
+  const [interestedCourses, setInterestedCourses] = React.useState<string[]>(
+    []
+  );
+  const [newCourse, setNewCourse] = React.useState('');
+  const [showInput, setShowInput] = React.useState(false);
+
+  const allCourses = getCourses(); // ✅ lấy ra dùng
+
+  const [selectedCourses, setSelectedCourses] = React.useState<string[]>([]);
+  const [inputValueCourses, setInputValueCourses] = React.useState<string>('');
+
+  // Xử lý bỏ chọn
+  const handleRemove = (item: string) => {
+    setSelectedCourses(selectedCourses.filter((i) => i !== item));
+  };
+
+  // Gợi ý đã được lọc
+  const filtered = allCourses.filter(
+    (item) =>
+      item.toLowerCase().includes(inputValueCourses.toLowerCase()) &&
+      !selectedCourses.includes(item) &&
+      !interestedCoursesDetails.includes(item)
+  );
+
+  //////////////////////////////////////////////////////////////////////////
+  const [interestedCoursesRegister, setInterestedCoursesRegister] =
+    React.useState<string[]>([]);
+  const [newCourseRegister, setNewCourseRegister] = React.useState('');
+  const [showInputRegister, setShowInputRegister] = React.useState(false);
+  const [selectedCoursesRegister, setSelectedCoursesRegister] = React.useState<
+    string[]
+  >([]);
+  const [inputValueCoursesRegister, setInputValueCoursesRegister] =
+    React.useState<string>('');
+
+  const handleRemoveRegister = (item: string) => {
+    setSelectedCoursesRegister(
+      selectedCoursesRegister.filter((i) => i !== item)
+    );
+  };
+
+  // Gợi ý đã được lọc
+  const interestedCoursesArray =
+    typeof interestedCoursesDetails === 'string'
+      ? interestedCoursesDetails
+          .split(';')
+          .map((item) => {
+            const beforeParen = item.split('(')[0].trim(); // Cắt phần trước dấu (
+            const firstDashIndex = beforeParen.indexOf('-'); // Vị trí dấu - đầu tiên
+            if (firstDashIndex !== -1) {
+              return beforeParen.slice(firstDashIndex + 1).trim(); // Lấy phần sau dấu - đầu tiên
+            }
+            return null;
+          })
+          .filter((v): v is string => !!v)
+      : [];
+
+  const filteredRegister = interestedCoursesArray.filter(
+    (item) =>
+      item.toLowerCase().includes(inputValueCoursesRegister.toLowerCase()) &&
+      !selectedCoursesRegister.includes(item) &&
+      !enrolledCoursesDetails.includes(item)
+  );
+
+  const consultationStatusOptions = [
+    { id: 'Scheduled', label: 'Đã lên lịch' },
+    { id: 'Completed', label: 'Hoàn thành' },
+    { id: 'Canceled', label: 'Đã hủy' },
+    { id: 'No_Show', label: 'Không tham dự' },
+  ];
+  const consultationTypeOptions = [
+    { id: 'Phone_Call', label: 'Cuộc gọi điện thoại' },
+    { id: 'Online_Meeting', label: 'Họp trực tuyến' },
+    { id: 'In_Person', label: 'Trực tiếp' },
+    { id: 'Email', label: 'Email' },
+    { id: 'Chat', label: 'Trò chuyện' },
+  ];
+
+  //Xử lý Đổi quản trị viên
+  const counselors = getUsers(); // Không cần useState nữa
+
+  // const [assignedCounselorId, setAssignedCounselorId] = React.useState('');
+  // const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  // const selectedCounselor = Array.isArray(counselors)
+  //   ? counselors.find((c) => String(c.id) === String(assignedCounselorId))
+  //   : undefined;
+
+  const [countName, setCountName] = React.useState('');
+
+  React.useEffect(() => {
+    if (item.assigned_counselor_name) {
+      setCountName(item.assigned_counselor_name);
+    }
+  }, [item.assigned_counselor_name]);
+
+  /////////////////////////////////////////
+  React.useEffect(() => {
+    if (selectedCoursesRegister && selectedCoursesRegister.length > 0) {
+      setIsEditing(true);
+    }
+  }, [selectedCoursesRegister]);
+
+  //Thao tác chỉnh sửa tư vấn
+  const [isEditing, setIsEditing] = React.useState(false);
+  React.useEffect(() => {
+    if (isEditing) {
+      setLastConsultationDurationMinutes('');
+      setLastConsultationNotes('');
+      setLastConsultationType('');
+      setLastConsultationStatus('');
+    } else {
+      setLastConsultationDurationMinutes(
+        item.last_consultation_duration_minutes ?? ''
+      );
+      setLastConsultationNotes(item.last_consultation_notes ?? '');
+      setLastConsultationType(item.last_consultation_type ?? '');
+      setLastConsultationStatus(item.last_consultation_status ?? '');
+    }
+  }, [isEditing]);
+
+  // Các trường dữ liệu: lastConsultationDate, lastConsultationType, ...
+  // Sẽ được giữ nguyên như bạn đang có.
 
   return (
     <>
@@ -1349,7 +1821,7 @@ function TableCellViewer({
                 <Label htmlFor="student_id">Mã Sinh Viên</Label>
                 <Input
                   id="student_id"
-                  value={item.student_id}
+                  value={Student_id}
                   readOnly
                   className="bg-muted cursor-not-allowed"
                 />
@@ -1432,19 +1904,20 @@ function TableCellViewer({
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="other_education_level_description">
-                  Mô Tả Trình Độ Học Vấn Khác
-                </Label>
-                <Input
-                  id="other_education_level_description"
-                  value={otherEducationLevelDescription}
-                  onChange={(e) =>
-                    setOtherEducationLevelDescription(e.target.value)
-                  }
-                />
+                {currentEducationLevel === 'Khác' && (
+                  <div className="flex flex-col gap-3">
+                    <Label htmlFor="other_education_level_description">
+                      Mô Tả Trình Độ Học Vấn Khác
+                    </Label>
+                    <Input
+                      id="other_education_level_description"
+                      value={otherEducationLevelDescription}
+                      onChange={(e) =>
+                        setOtherEducationLevelDescription(e.target.value)
+                      }
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col gap-3">
@@ -1456,57 +1929,148 @@ function TableCellViewer({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="flex flex-col gap-3 relative" ref={dropdownRef}>
                   <Label htmlFor="city">Thành Phố</Label>
-                  <Input
+                  <input
+                    type="text"
                     id="city"
                     value={city}
+                    autoComplete="off"
                     onChange={(e) => setCity(e.target.value)}
+                    className="w-full mt-1 p-2 border rounded border-gray-300"
+                    onFocus={() => setShowDropdown(true)}
                   />
-                </div>
-                <div className="flex flex-col gap-3">
-                  <Label htmlFor="source">Nguồn</Label>
-                  <Select value={source} onValueChange={setSource}>
-                    <SelectTrigger id="source" className="w-full">
-                      <SelectValue placeholder="Chọn nguồn" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Mail">Mail</SelectItem>
-                      <SelectItem value="Fanpage">Fanpage</SelectItem>
-                      <SelectItem value="Zalo">Zalo</SelectItem>
-                      <SelectItem value="Website">Website</SelectItem>
-                      <SelectItem value="Friend">Bạn bè</SelectItem>
-                      <SelectItem value="SMS">SMS</SelectItem>
-                      <SelectItem value="Banderole">Banderole</SelectItem>
-                      <SelectItem value="Poster">Poster</SelectItem>
-                      <SelectItem value="Brochure">Brochure</SelectItem>
-                      <SelectItem value="Google">Google</SelectItem>
-                      <SelectItem value="Brand">Thương hiệu</SelectItem>
-                      <SelectItem value="Event">Sự kiện</SelectItem>
-                      <SelectItem value="Other">Khác</SelectItem>
-                    </SelectContent>
-                  </Select>
+
+                  {showDropdown && city != '' && (
+                    <ul className="absolute top-full left-0 w-full bg-white border border-gray-300 rounded shadow-md mt-1 max-h-40 overflow-y-auto text-sm z-50">
+                      {filteredProvinces.map((province, index) => (
+                        <li
+                          key={index}
+                          onMouseDown={() =>
+                            handleSelect(province, {
+                              multiple: false,
+                              selected: selectedProvince,
+                              setSelected: setSelectedProvince,
+                              setInputValue: setCity,
+                              setShowDropdown: setShowDropdown,
+                            })
+                          }
+                          className="px-3 py-2 hover:bg-blue-100 cursor-pointer"
+                        >
+                          {province}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="notification_consent">
-                  Đồng Ý Nhận Thông Báo
-                </Label>
-                <Select
-                  value={notificationConsent}
-                  onValueChange={setNotificationConsent}
+              <div className="grid grid-cols-2 gap-4">
+                <div
+                  ref={containerRef}
+                  className="flex flex-col gap-3 relative"
                 >
-                  <SelectTrigger id="notification_consent" className="w-full">
-                    <SelectValue placeholder="Đồng ý/Không đồng ý" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Đồng ý">Đồng ý</SelectItem>
-                    <SelectItem value="Không đồng ý">Không đồng ý</SelectItem>
-                    <SelectItem value="Khác">Khác</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <Label>Nguồn</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowSources((prev) => !prev)}
+                    className="w-full flex justify-between items-center text-left rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm"
+                  >
+                    <span className="truncate flex-1 font-normal">
+                      {source.length > 0 ? source.join(', ') : 'Chọn nguồn'}
+                    </span>
+                    <ChevronDownIcon
+                      className={`ml-2 h-4 w-4 shrink-0 transition-transform ${
+                        showSources ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </Button>
+
+                  {showSources && (
+                    <div className="absolute z-50 top-full mt-2 left-0 w-full rounded-md border bg-white p-3 shadow-lg dark:bg-zinc-900">
+                      <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
+                        {[
+                          'Mail',
+                          'Fanpage',
+                          'Zalo',
+                          'Website',
+                          'Friend',
+                          'SMS',
+                          'Banderole',
+                          'Poster',
+                          'Brochure',
+                          'Google',
+                          'Brand',
+                          'Event',
+                        ].map((value) => (
+                          <label
+                            key={value}
+                            className="flex items-center gap-2 cursor-pointer"
+                          >
+                            <Checkbox
+                              id={value}
+                              checked={source.includes(value)}
+                              onCheckedChange={() => toggleSource(value)}
+                            />
+                            <span className="text-sm">{value}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-3">
+                  <Label htmlFor="other_source_description">Nguồn Khác</Label>
+                  <Input
+                    id="other_source_description"
+                    value={other_source_description}
+                    onChange={(e) =>
+                      setOther_source_description(e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-3">
+                  <Label htmlFor="notification_consent">
+                    Đồng Ý Nhận Thông Báo
+                  </Label>
+
+                  <Select
+                    value={notificationConsent}
+                    onValueChange={(value) => {
+                      setNotificationConsent(value);
+                      if (value !== 'Khác') setOtherNotificationConsent(''); // Reset nếu không chọn "Khác"
+                    }}
+                  >
+                    <SelectTrigger id="notification_consent" className="w-full">
+                      <SelectValue placeholder="Đồng ý/Không đồng ý" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Đồng ý">Đồng ý</SelectItem>
+                      <SelectItem value="Không đồng ý">Không đồng ý</SelectItem>
+                      <SelectItem value="Khác">Khác</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {notificationConsent === 'Khác' && (
+                  <div className="flex flex-col gap-3">
+                    <Label htmlFor="other_notification_consent_description">
+                      Mô Tả Nhận Thông Báo Khác
+                    </Label>
+                    <Input
+                      id="other_notification_consent_description"
+                      value={other_notification_consent_description}
+                      onChange={(e) =>
+                        setOther_notification_consent_description(
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -1528,7 +2092,6 @@ function TableCellViewer({
                       </SelectItem>
                       <SelectItem value="Đã đăng ký">Đã đăng ký</SelectItem>
                       <SelectItem value="Thôi học">Đã ngừng</SelectItem>
-                      <SelectItem value="Đã lưu trữ">Đã lưu trữ</SelectItem>
                       {/* Thêm các trạng thái khác nếu cần */}
                     </SelectContent>
                   </Select>
@@ -1579,19 +2142,34 @@ function TableCellViewer({
                 setDate={() => {}} // Readonly
                 readOnly={true}
               />
+              <hr className="border-1 border-gray-400 my-6 mx-10" />
 
               <div className="grid grid-cols-2 gap-4">
                 {/* Tên Người Tư Vấn Được Gán - READ ONLY */}
                 <div className="flex flex-col gap-3">
-                  <Label htmlFor="assigned_counselor_name">
-                    Tên Người Tư Vấn Được Gán
-                  </Label>
-                  <Input
-                    id="assigned_counselor_name"
+                  <Label htmlFor="assigned_counselor_name">Người Tư Vấn</Label>
+                  <Select
                     value={assignedCounselorName}
-                    readOnly
-                    className="bg-muted cursor-not-allowed"
-                  />
+                    onValueChange={setAssignedCounselorName}
+                  >
+                    <SelectTrigger
+                      id="assigned_counselor_name"
+                      className="w-full"
+                    >
+                      <SelectValue placeholder="Chọn tư vấn viên" />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      {counselors.map((counselor) => (
+                        <SelectItem
+                          key={counselor.id}
+                          value={counselor.full_name} // hoặc counselor.id.toString() nếu bạn dùng id
+                        >
+                          {counselor.full_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Loại Người Tư Vấn Được Gán - READ ONLY */}
@@ -1609,24 +2187,196 @@ function TableCellViewer({
               </div>
 
               {/* Chi Tiết Khóa Học Quan Tâm - READ ONLY */}
-              <ExpandableTextField
-                label="Chi Tiết Khóa Học Quan Tâm"
-                id="interested_courses_details"
-                content={interestedCoursesDetails}
-                show={showInterestedCourses}
-                setShow={setShowInterestedCourses}
-                readOnly={true}
-              />
+              <div className="space-y-3">
+                {/* Field expandable hiển thị danh sách khóa học */}
+                <ExpandableTextField
+                  label="Chi Tiết Khóa Học Quan Tâm"
+                  id="interested_courses_details"
+                  content={interestedCoursesDetails}
+                  show={showInterestedCourses}
+                  setShow={setShowInterestedCourses}
+                  readOnly={true}
+                />
 
-              {/* Chi Tiết Khóa Học Đã Đăng Ký - READ ONLY */}
-              <ExpandableTextField
-                label="Chi Tiết Khóa Học Đã Đăng Ký"
-                id="enrolled_courses_details"
-                content={enrolledCoursesDetails}
-                show={showEnrolledCourses}
-                setShow={setShowEnrolledCourses}
-                readOnly={true}
-              />
+                {/* Nút hiển thị input thêm khóa học */}
+                {showInterestedCourses && !showInput && (
+                  <button
+                    type="button"
+                    onClick={() => setShowInput(true)}
+                    className="text-blue-600 underline text-sm"
+                  >
+                    + Thêm khóa học quan tâm
+                  </button>
+                )}
+
+                {/* Input + nút xác nhận thêm khóa học */}
+                {showInterestedCourses && showInput && (
+                  <div className="w-full p-4 rounded border border-sky-200 shadow-sm bg-sky-50 space-y-3">
+                    {/* Input + nút Đóng nằm cùng hàng */}
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="Nhập tên khóa học..."
+                        value={inputValueCourses}
+                        onChange={(e) => setInputValueCourses(e.target.value)}
+                        className="flex-1 px-3 py-2 border border-sky-400 rounded focus:outline-none focus:ring-2 focus:ring-sky-300 text-sm bg-white shadow-sm"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowInput(false);
+                          setInputValueCourses('');
+                        }}
+                        title="Đóng"
+                        className="p-2 rounded-full text-red-500 hover:text-white hover:bg-red-500 transition duration-200"
+                      >
+                        <span className="text-lg leading-none">✕</span>
+                      </button>
+                    </div>
+
+                    {/* Dropdown gợi ý */}
+                    {inputValueCourses && filtered.length > 0 && (
+                      <div className="relative">
+                        <div className="absolute z-50 top-full left-0 right-0 mt-1 border border-gray-300 rounded shadow bg-white text-sm max-h-40 overflow-y-auto">
+                          {filtered.map((item) => (
+                            <div
+                              key={item}
+                              onMouseDown={() =>
+                                handleSelect(item, {
+                                  multiple: true,
+                                  selected: selectedCourses,
+                                  setSelected: setSelectedCourses,
+                                  setInputValue: setInputValueCourses,
+                                })
+                              }
+                              className="px-3 py-2 hover:bg-blue-100 cursor-pointer transition"
+                            >
+                              {item}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Danh sách đã chọn */}
+                    <div className="flex flex-wrap gap-2">
+                      {selectedCourses.map((item) => (
+                        <div
+                          key={item}
+                          className="flex items-center bg-blue-100 text-blue-800 rounded-full px-3 py-1 text-sm"
+                        >
+                          <span>{item}</span>
+                          <button
+                            onClick={() => handleRemove(item)}
+                            className="ml-2 text-blue-500 hover:text-red-500 focus:outline-none"
+                            title="Xoá"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                {/* Chi Tiết Khóa Học Đã Đăng Ký - READ ONLY */}
+                <ExpandableTextField
+                  label="Chi Tiết Khóa Học Đã Đăng Ký"
+                  id="enrolled_courses_details"
+                  content={enrolledCoursesDetails}
+                  show={showEnrolledCourses}
+                  setShow={setShowEnrolledCourses}
+                  readOnly={true}
+                />
+
+                {/* Nút hiển thị input thêm khóa học */}
+                {showEnrolledCourses && !showInputRegister && (
+                  <button
+                    type="button"
+                    onClick={() => setShowInputRegister(true)}
+                    className="text-blue-600 underline text-sm"
+                  >
+                    + Thêm khóa học đăng ký
+                  </button>
+                )}
+
+                {/* Input + nút xác nhận thêm khóa học */}
+                {showEnrolledCourses && showInputRegister && (
+                  <div className="w-full p-4 rounded border border-sky-200 shadow-sm bg-sky-50 space-y-3">
+                    {/* Input + nút Đóng nằm cùng hàng */}
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="Nhập tên khóa học..."
+                        value={inputValueCoursesRegister}
+                        onChange={(e) =>
+                          setInputValueCoursesRegister(e.target.value)
+                        }
+                        className="flex-1 px-3 py-2 border border-sky-400 rounded focus:outline-none focus:ring-2 focus:ring-sky-300 text-sm bg-white shadow-sm"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowInputRegister(false);
+                          setInputValueCoursesRegister('');
+                        }}
+                        title="Đóng"
+                        className="p-2 rounded-full text-red-500 hover:text-white hover:bg-red-500 transition duration-200"
+                      >
+                        <span className="text-lg leading-none">✕</span>
+                      </button>
+                    </div>
+
+                    {/* Dropdown gợi ý */}
+                    {inputValueCoursesRegister &&
+                      filteredRegister.length > 0 && (
+                        <div className="relative">
+                          <div className="absolute z-50 top-full left-0 right-0 mt-1 border border-gray-300 rounded shadow bg-white text-sm max-h-40 overflow-y-auto">
+                            {filteredRegister.map((item) => (
+                              <div
+                                key={item}
+                                onMouseDown={() =>
+                                  handleSelect(item, {
+                                    multiple: true,
+                                    selected: selectedCoursesRegister,
+                                    setSelected: setSelectedCoursesRegister,
+                                    setInputValue: setInputValueCoursesRegister,
+                                  })
+                                }
+                                className="px-3 py-2 hover:bg-blue-100 cursor-pointer transition"
+                              >
+                                {item}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                    {/* Danh sách đã chọn */}
+                    <div className="flex flex-wrap gap-2">
+                      {selectedCoursesRegister.map((item) => (
+                        <div
+                          key={item}
+                          className="flex items-center bg-blue-100 text-blue-800 rounded-full px-3 py-1 text-sm"
+                        >
+                          <span>{item}</span>
+                          <button
+                            onClick={() => handleRemoveRegister(item)}
+                            className="ml-2 text-blue-500 hover:text-red-500 focus:outline-none"
+                            title="Xoá"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Lịch sử trạng thái sinh viên - EDITABLE */}
               <ExpandableTextField
@@ -1638,27 +2388,54 @@ function TableCellViewer({
                 onContentChange={setStudentStatusHistoryNotes}
               />
 
-              {/* Last Consultation Date */}
-              <HybridDatePickerField
-                label="Ngày Tư Vấn Cuối Cùng"
-                id="last_consultation_date"
-                date={lastConsultationDate}
-                setDate={setLastConsultationDate}
-              />
-
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="last_consultation_duration_minutes">
-                  Thời Lượng Tư Vấn Cuối Cùng (phút)
-                </Label>
-                <Input
-                  id="last_consultation_duration_minutes"
-                  value={lastConsultationDurationMinutes}
-                  onChange={(e) =>
-                    setLastConsultationDurationMinutes(e.target.value)
-                  }
-                  type="number"
-                />
+              <hr className="border-1 border-gray-400 mt-3 mb-4 mx-10" />
+              <div className="flex justify-end mr-10 ">
+                <span
+                  className={`inline-block px-4 py-1.5 rounded-lg text-sm font-semibold shadow-md cursor-pointer transition-all duration-200 ${
+                    isEditing
+                      ? 'bg-green-600 text-white hover:bg-green-700'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  } ${
+                    selectedCoursesRegister &&
+                    selectedCoursesRegister.length > 0
+                      ? 'opacity-50 cursor-not-allowed pointer-events-none'
+                      : 'cursor-pointer'
+                  }`}
+                  onClick={() => setIsEditing((prev) => !prev)}
+                >
+                  {isEditing ? 'ON' : 'OFF'}
+                </span>
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <HybridDatePickerField
+                  label="Ngày Tư Vấn Cuối Cùng"
+                  id="last_consultation_date"
+                  date={lastConsultationDate}
+                  readOnly={!isEditing}
+                  setDate={setLastConsultationDate}
+                />
+                <div className="flex flex-col gap-3">
+                  <Label htmlFor="last_consultation_duration_minutes">
+                    Thời Lượng Tư Vấn Cuối Cùng (phút)
+                  </Label>
+                  <Input
+                    id="last_consultation_duration_minutes"
+                    value={lastConsultationDurationMinutes}
+                    onChange={(e) =>
+                      setLastConsultationDurationMinutes(e.target.value)
+                    }
+                    type="number"
+                    readOnly={!isEditing}
+                    className={`transition-all duration-200 ${
+                      isEditing
+                        ? 'bg-white cursor-text'
+                        : 'bg-muted text-muted-foreground cursor-not-allowed'
+                    }`}
+                  />
+                </div>
+              </div>
+              {/* Last Consultation Date */}
 
               <div className="flex flex-col gap-3">
                 <Label htmlFor="last_consultation_notes">
@@ -1667,7 +2444,13 @@ function TableCellViewer({
                 <Input
                   id="last_consultation_notes"
                   value={lastConsultationNotes}
+                  disabled={!isEditing}
                   onChange={(e) => setLastConsultationNotes(e.target.value)}
+                  className={` ${
+                    isEditing
+                      ? 'bg-white cursor-text'
+                      : 'bg-gray-200 text-black cursor-not-allowed'
+                  }`}
                 />
               </div>
 
@@ -1679,15 +2462,28 @@ function TableCellViewer({
                   <Select
                     value={lastConsultationType}
                     onValueChange={setLastConsultationType}
+                    disabled={!isEditing}
                   >
                     <SelectTrigger
                       id="last_consultation_type"
-                      className="w-full"
+                      className={`w-full ${
+                        isEditing
+                          ? 'bg-white cursor-text'
+                          : 'bg-gray-200 text-black cursor-not-allowed'
+                      }`}
                     >
                       <SelectValue placeholder="Chọn loại tư vấn" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Phone_Call">
+                      {consultationTypeOptions.map((lasttype) => (
+                        <SelectItem
+                          key={lasttype.id}
+                          value={lasttype.label} // hoặc counselor.id.toString() nếu bạn dùng id
+                        >
+                          {lasttype.label}
+                        </SelectItem>
+                      ))}
+                      {/* <SelectItem value="Phone_Call">
                         Cuộc gọi điện thoại
                       </SelectItem>
                       <SelectItem value="Online_Meeting">
@@ -1695,7 +2491,7 @@ function TableCellViewer({
                       </SelectItem>
                       <SelectItem value="In_Person">Trực tiếp</SelectItem>
                       <SelectItem value="Email">Email</SelectItem>
-                      <SelectItem value="Chat">Trò chuyện</SelectItem>
+                      <SelectItem value="Chat">Trò chuyện</SelectItem> */}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1707,18 +2503,27 @@ function TableCellViewer({
                   <Select
                     value={lastConsultationStatus}
                     onValueChange={setLastConsultationStatus}
+                    disabled={!isEditing}
                   >
                     <SelectTrigger
                       id="last_consultation_status"
-                      className="w-full"
+                      className={`w-full ${
+                        isEditing
+                          ? 'bg-white cursor-text'
+                          : 'bg-gray-200 text-black cursor-not-allowed'
+                      }`}
                     >
                       <SelectValue placeholder="Chọn trạng thái tư vấn" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Scheduled">Đã lên lịch</SelectItem>
-                      <SelectItem value="Completed">Hoàn thành</SelectItem>
-                      <SelectItem value="Canceled">Đã hủy</SelectItem>
-                      <SelectItem value="No Show">Không có mặt</SelectItem>
+                      {consultationStatusOptions.map((laststatus) => (
+                        <SelectItem
+                          key={laststatus.id}
+                          value={laststatus.label} // hoặc counselor.id.toString() nếu bạn dùng id
+                        >
+                          {laststatus.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1761,6 +2566,18 @@ function TableCellViewer({
           <AlertTitle>Thành công!</AlertTitle>
           <AlertDescription>
             Thay đổi của bạn đã được lưu thành công.
+          </AlertDescription>
+        </Alert>
+      )}
+      {isError && (
+        <Alert variant="destructive" className="fixed top-4 right-4 w-[350px]">
+          <AlertTitle className="text-red-600">
+            Thay đổi chưa được lưu
+          </AlertTitle>
+          <AlertDescription className="text-sm ">
+            Có lỗi xảy ra trong quá trình lưu.
+            <br />
+            Vui lòng kiểm tra lại dữ liệu và thử lại.
           </AlertDescription>
         </Alert>
       )}

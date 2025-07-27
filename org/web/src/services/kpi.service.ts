@@ -98,6 +98,12 @@ export interface KPIApiResponse {
       isWarning: boolean;
       warningMessage: string;
     };
+    otherCounts?: {
+      lead: number;
+      engaging: number;
+      studentregister: number;
+      studentregisteronce: number;
+    };
     // Add other fields if needed
   };
   message?: string;

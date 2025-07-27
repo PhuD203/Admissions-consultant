@@ -4,7 +4,6 @@ import {
   consultationsessions_session_type,
   consultationsessions_session_status,
   students_current_education_level,
-  students_source,
   students_notification_consent,
   students_current_status,
   studentstatushistory_old_status,
@@ -14,6 +13,7 @@ import {
 import Paginator from '../paginator';
 import { StudentUpdateApiDto } from '../../dtos/student/student-update.dto';
 import { ConsultationHistory } from '../../dtos/student/student-history.dto';
+// import { error } from 'console';
 const prisma = new PrismaClient();
 
 export interface StudentApiResponse {
@@ -47,6 +47,26 @@ export interface StudentApiResponse {
   last_consultation_type: string | null;
   last_consultation_status: string | null;
   last_consultation_counselor_name: string | null;
+}
+
+export interface StudentEromentApiResponse {
+  student_id: number;
+  student_name: string;
+  email: string;
+  phone_number: string;
+  date_of_birth: string | null;
+  city: string;
+  current_education_level: string;
+  source: string;
+  // assigned_counselor_name: string;
+  // assigned_counselor_type: string;
+  enrolled_courses_details: string | null;
+  // last_consultation_date: string | null;
+  // last_consultation_duration_minutes: number | null;
+  // last_consultation_notes: string | null;
+  // last_consultation_type: string | null;
+  // last_consultation_status: string | null;
+  // last_consultation_counselor_name: string | null;
 }
 
 class ConsultingInformationManagementService {
@@ -86,7 +106,7 @@ class ConsultingInformationManagementService {
     }
   }
 
-  private mapSource(source: students_source | null): string {
+  private mapSource(source: string | null): string {
     if (source === null) return '';
     switch (source) {
       case 'Mail':
@@ -257,9 +277,10 @@ class ConsultingInformationManagementService {
 
   async getAllConsultingInformation(
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
+    assigned_counselor_id: number
   ): Promise<{
-    consultingInformation: StudentApiResponse[];
+    consultingInformation: StudentEromentApiResponse[];
     metadata: any;
   }> {
     try {
@@ -268,17 +289,31 @@ class ConsultingInformationManagementService {
       const paginator = new Paginator(validPage, validLimit);
       const offset = paginator.offset;
 
-      // Chỉ đếm sinh viên có current_status là 'Registered'
-      const totalConsultingInformationCount = await prisma.students.count({
+      const whereAssigned_counselor_id: any = {}; // hoặc `Record<string, any>` nếu muốn rõ type
+      const wherecounselor_id: any = {}; // hoặc `Record<string, any>` nếu muốn rõ type
+
+      const userType = await prisma.users.findUnique({
         where: {
-          current_status: 'Registered',
+          id: assigned_counselor_id,
+        },
+        select: {
+          user_type: true,
         },
       });
+      if (userType?.user_type === 'counselor') {
+        whereAssigned_counselor_id.assigned_counselor_id =
+          assigned_counselor_id;
+        wherecounselor_id.counselor_id = assigned_counselor_id;
+      }
 
-      console.log(
-        'Total registered students count:',
-        totalConsultingInformationCount
-      );
+      const totalConsultingInformationCount = await prisma.students.count({
+        where: {
+          ...whereAssigned_counselor_id,
+          studentenrollments: {
+            some: {},
+          },
+        },
+      });
 
       if (totalConsultingInformationCount === 0) {
         return {
@@ -287,27 +322,33 @@ class ConsultingInformationManagementService {
         };
       }
 
-      // Chỉ lấy sinh viên có current_status là 'Registered'
       const studentsWithDetails = await prisma.students.findMany({
         where: {
-          current_status: 'Registered',
+          studentenrollments: {
+            some: {
+              ...wherecounselor_id,
+            },
+          },
         },
         skip: offset,
-        take: validLimit,
+        // take: validLimit,
+        orderBy: {
+          id: 'asc',
+        },
         select: {
           id: true,
           student_name: true,
           email: true,
           phone_number: true,
+          current_education_level: true,
+          source: true,
+          date_of_birth: true,
+          city: true,
           gender: true,
           zalo_phone: true,
           link_facebook: true,
-          date_of_birth: true,
-          current_education_level: true,
           other_education_level_description: true,
           high_school_name: true,
-          city: true,
-          source: true,
           other_source_description: true,
           notification_consent: true,
           other_notification_consent_description: true,
@@ -316,207 +357,418 @@ class ConsultingInformationManagementService {
           registration_date: true,
           created_at: true,
           updated_at: true,
-          users: {
-            select: {
-              full_name: true,
-              user_type: true,
-            },
-          },
-          student_interested_courses: {
-            select: {
-              courses: {
-                select: {
-                  name: true,
-                  description: true,
-                  coursecategories: {
-                    select: {
-                      name: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
           studentenrollments: {
             select: {
               enrollment_date: true,
               fee_paid: true,
+              payment_status: true,
+              notes: true,
+              users: {
+                select: {
+                  full_name: true,
+                  program_type: true,
+                },
+              },
               courses: {
                 select: {
                   name: true,
-                  coursecategories: {
+                  // coursecategories: {
+                  //   select: {
+                  //     name: true,
+                  //   },
+                  // },
+                },
+              },
+              consultationsessions: {
+                select: {
+                  session_date: true,
+                  duration_minutes: true,
+                  session_type: true,
+                  session_status: true,
+                  users: {
                     select: {
-                      name: true,
+                      full_name: true,
                     },
                   },
                 },
               },
             },
           },
-          studentstatushistory: {
-            select: {
-              old_status: true,
-              new_status: true,
-              change_date: true,
-              notes: true,
-              users: {
-                select: {
-                  full_name: true,
-                },
-              },
-            },
-            orderBy: {
-              change_date: 'asc',
-            },
-          },
-          consultationsessions: {
-            select: {
-              session_date: true,
-              duration_minutes: true,
-              notes: true,
-              session_type: true,
-              session_status: true,
-              users: {
-                select: {
-                  full_name: true,
-                },
-              },
-            },
-            orderBy: {
-              session_date: 'desc',
-            },
-            take: 1,
-          },
-        },
-        orderBy: {
-          id: 'asc',
         },
       });
 
-      const formattedConsultingInformation: StudentApiResponse[] =
-        studentsWithDetails.map((student) => {
-          const assignedCounselorName = student.users?.full_name || 'N/A';
-          const assignedCounselorType = student.users
-            ? this.mapUserType(student.users.user_type)
-            : 'N/A';
+      const formatted: StudentEromentApiResponse[] = studentsWithDetails.map(
+        (student) => {
+          const enrollments = student.studentenrollments;
 
-          const interestedCoursesDetails =
-            student.student_interested_courses.length > 0
-              ? student.student_interested_courses
-                  .map(
-                    (sic) =>
-                      `${sic.courses.coursecategories.name} - ${
-                        sic.courses.name
-                      } (Mô tả: ${sic.courses.description || 'N/A'})`
-                  )
-                  .join(';\n')
-              : null;
+          const enrolled_courses_details = enrollments
+            .map((enroll) => {
+              const courseStr = `${enroll.courses.name}`;
+              const Infosessions = `Ngày tư vấn cuối cùng:${this.formatDate(
+                enroll.consultationsessions?.session_date
+              )}, Thời lượng tư vấn cuối cùng:${
+                enroll.consultationsessions?.duration_minutes
+              } phút, Loại tư vấn cuối cùng:${
+                enroll.consultationsessions?.session_type
+              }, Trạng thái tư vấn cuối cùng:${
+                enroll.consultationsessions?.session_status
+              }, Người phụ trách cuối cùng:${
+                enroll.consultationsessions?.users.full_name
+              }`;
+              // const infoenro = `${enroll.enrollment_date.notes}`;
+              const enrollmentInfo = `Ngày đăng ký: ${this.formatDate(
+                enroll.enrollment_date
+              )}, Notes: ${enroll.notes}, Trạng thái thanh toán: ${
+                enroll.payment_status
+              }, Phí đã trả:${Number(enroll.fee_paid)})`;
+              return `${courseStr}*${enrollmentInfo}*${Infosessions}`;
+            })
+            .join(';\n');
 
-          const enrolledCoursesDetails =
-            student.studentenrollments.length > 0
-              ? student.studentenrollments
-                  .map(
-                    (se) =>
-                      `${se.courses.coursecategories.name} - ${
-                        se.courses.name
-                      } (Ngày đăng ký: ${this.formatDate(
-                        se.enrollment_date
-                      )}, Phí đã trả: ${se.fee_paid.toFixed(2)})`
-                  )
-                  .join(';\n')
-              : null;
-
-          const studentStatusHistory =
-            student.studentstatushistory.length > 0
-              ? student.studentstatushistory
-                  .map((ssh) => {
-                    const oldStatusMapped = this.mapOldStatusHistory(
-                      ssh.old_status
-                    );
-                    const newStatusMapped = this.mapNewStatusHistory(
-                      ssh.new_status
-                    );
-                    const notesPart = ssh.notes
-                      ? `, Ghi chú: ${ssh.notes}`
-                      : '';
-                    return `Từ: ${oldStatusMapped} Đến: ${newStatusMapped} (Ngày: ${this.formatDateTime(
-                      ssh.change_date
-                    )}, Bởi: ${ssh.users.full_name}${notesPart})`;
-                  })
-                  .join(';\n')
-              : '';
-
-          const latestConsultation = student.consultationsessions[0] || null;
+          // const allSessions = enrollments.flatMap(
+          //   (e) => e.consultationsessions ?? []
+          // );
+          // const validSessions = allSessions.filter(
+          //   (s): s is NonNullable<typeof s> => s !== null
+          // );
+          // const latestSession = validSessions
+          //   .filter((s) => s.session_date !== null)
+          //   .sort(
+          //     (a, b) =>
+          //       new Date(b.session_date!).getTime() -
+          //       new Date(a.session_date!).getTime()
+          //   )[0];
 
           return {
             student_id: student.id,
             student_name: student.student_name,
             email: student.email || '',
-            phone_number: student.phone_number,
-            gender: student.gender,
-            zalo_phone: student.zalo_phone || '',
-            link_facebook: student.link_facebook || '',
-            date_of_birth: this.formatDate(student.date_of_birth) || '',
+            phone_number: student.phone_number || '',
+            date_of_birth: student.date_of_birth
+              ? this.formatDate(student.date_of_birth)
+              : null,
+            city: student.city || '',
             current_education_level: this.mapEducationLevel(
               student.current_education_level
             ),
+            source: this.mapSource(student.source),
+            enrolled_courses_details: enrolled_courses_details || null,
+
+            link_facebook: student.link_facebook || '',
+            // current_education_level: this.mapEducationLevel(
+            //   student.current_education_level
+            // ),
             other_education_level_description:
               student.other_education_level_description,
             high_school_name: student.high_school_name || '',
-            city: student.city || '',
-            source: this.mapSource(student.source),
+            // city: student.city || '',
+            // source: this.mapSource(student.source),
             other_source_description: student.other_source_description,
             notification_consent: this.mapNotificationConsent(
               student.notification_consent
             ),
             other_notification_consent_description:
               student.other_notification_consent_description,
-            current_status: this.mapStudentStatus(student.current_status),
+            current_status: this.mapStudentStatus(student.current_status), // Vẫn map để hiển thị tiếng Việt ở frontend
             status_change_date:
               this.formatDateTime(student.status_change_date) || '',
-            registration_date: this.formatDate(student.registration_date),
-            student_created_at: this.formatDateTime(student.created_at) || '',
-            student_updated_at: this.formatDateTime(student.updated_at) || '',
-            assigned_counselor_name: assignedCounselorName,
-            assigned_counselor_type: assignedCounselorType,
-            interested_courses_details: interestedCoursesDetails,
-            enrolled_courses_details: enrolledCoursesDetails,
-            student_status_history: studentStatusHistory,
-            last_consultation_date: latestConsultation
-              ? this.formatDateTime(latestConsultation.session_date)
-              : null,
-            last_consultation_duration_minutes:
-              latestConsultation?.duration_minutes || null,
-            last_consultation_notes: latestConsultation?.notes || null,
-            last_consultation_type: latestConsultation
-              ? this.mapConsultationSessionType(latestConsultation.session_type)
-              : null,
-            last_consultation_status: latestConsultation
-              ? this.mapConsultationSessionStatus(
-                  latestConsultation.session_status
-                )
-              : null,
-            last_consultation_counselor_name:
-              latestConsultation?.users.full_name || null,
-          };
-        });
 
-      const metadata = paginator.getMetadata(totalConsultingInformationCount);
-      console.log('Generated metadata:', metadata);
+            assigned_counselor_name: '',
+            assigned_counselor_type: '',
+            interested_courses_details: '',
+            student_status_history: '', // nếu không có dữ liệu thực
+            last_consultation_date: '',
+            last_consultation_duration_minutes: null,
+            last_consultation_notes: '',
+            last_consultation_type: '',
+            last_consultation_status: '',
+            last_consultation_counselor_name: '',
+            gender: student.gender, // nếu không lấy từ DB, phải để mặc định
+            zalo_phone: '', // hoặc null tùy schema
+            // link_facebook: '',
+            // other_education_level_description: '',
+            // high_school_name: '',
+            // notification_consent: '',
+            // other_notification_consent_description: '',
+            // current_status: '',
+            // status_change_date: '',
+            registration_date: '',
+            student_created_at: '',
+            student_updated_at: '',
+            // other_source_description: '', // hoặc null nếu bạn không có
+            // assigned_counselor_name: enrollments[0]?.users?.full_name || 'N/A',
+            // assigned_counselor_type:
+            //   enrollments[0]?.users?.program_type || 'N/A',
+            // interested_courses_details: null,
+            // student_status_history: '',
+            // last_consultation_date: latestSession
+            //   ? this.formatDateTime(latestSession.session_date)
+            //   : null,
+            // last_consultation_duration_minutes:
+            //   latestSession?.duration_minutes || null,
+            // last_consultation_notes: latestSession?.notes || null,
+            // last_consultation_type: latestSession
+            //   ? this.mapConsultationSessionType(latestSession.session_type)
+            //   : null,
+            // last_consultation_status: latestSession
+            //   ? this.mapConsultationSessionStatus(latestSession.session_status)
+            //   : null,
+            // last_consultation_counselor_name:
+            //   latestSession?.users?.full_name || null,
+          };
+        }
+      );
 
       return {
-        consultingInformation: formattedConsultingInformation,
-        metadata,
+        consultingInformation: formatted,
+        metadata: paginator.getMetadata(totalConsultingInformationCount),
       };
     } catch (error: any) {
       console.error(
-        'CRITICAL ERROR in ConsultingInformationManagementService.getAllConsultingInformation (using Prisma Client):',
+        'CRITICAL ERROR in getAllConsultingInformation:',
         error.message || error
       );
       console.error('Error stack:', error.stack);
       throw error;
     }
   }
+
+  // async getAllConsultingInformation(
+  //   page: number = 1,
+  //   limit: number = 10
+  // ): Promise<{
+  //   consultingInformation: StudentApiResponse[];
+  //   metadata: any;
+  // }> {
+  //   try {
+  //     const validPage = Math.max(1, Math.floor(page));
+  //     const validLimit = Math.max(1, Math.floor(limit));
+  //     const paginator = new Paginator(validPage, validLimit);
+  //     const offset = paginator.offset;
+
+  //     // Đếm số lượt enroll hợp lệ
+  //     const totalEnrollments = await prisma.studentenrollments.count();
+
+  //     if (totalEnrollments === 0) {
+  //       return {
+  //         consultingInformation: [],
+  //         metadata: paginator.getMetadata(0),
+  //       };
+  //     }
+
+  //     const enrollments = await prisma.studentenrollments.findMany({
+  //       skip: offset,
+  //       take: validLimit,
+  //       orderBy: {
+  //         enrollment_date: 'desc',
+  //       },
+  //       select: {
+  //         enrollment_date: true,
+  //         fee_paid: true,
+  //         students: {
+  //           select: {
+  //             id: true,
+  //             student_name: true,
+  //             email: true,
+  //             phone_number: true,
+  //             gender: true,
+  //             zalo_phone: true,
+  //             link_facebook: true,
+  //             date_of_birth: true,
+  //             current_education_level: true,
+  //             other_education_level_description: true,
+  //             high_school_name: true,
+  //             city: true,
+  //             source: true,
+  //             other_source_description: true,
+  //             notification_consent: true,
+  //             other_notification_consent_description: true,
+  //             current_status: true,
+  //             status_change_date: true,
+  //             registration_date: true,
+  //             created_at: true,
+  //             updated_at: true,
+  //             users: {
+  //               select: {
+  //                 full_name: true,
+  //                 user_type: true,
+  //               },
+  //             },
+  //             student_interested_courses: {
+  //               select: {
+  //                 courses: {
+  //                   select: {
+  //                     name: true,
+  //                     description: true,
+  //                     coursecategories: {
+  //                       select: {
+  //                         name: true,
+  //                       },
+  //                     },
+  //                   },
+  //                 },
+  //               },
+  //             },
+  //             studentstatushistory: {
+  //               select: {
+  //                 old_status: true,
+  //                 new_status: true,
+  //                 change_date: true,
+  //                 notes: true,
+  //                 users: {
+  //                   select: {
+  //                     full_name: true,
+  //                   },
+  //                 },
+  //               },
+  //               orderBy: {
+  //                 change_date: 'asc',
+  //               },
+  //             },
+  //             consultationsessions: {
+  //               select: {
+  //                 session_date: true,
+  //                 duration_minutes: true,
+  //                 notes: true,
+  //                 session_type: true,
+  //                 session_status: true,
+  //                 users: {
+  //                   select: {
+  //                     full_name: true,
+  //                   },
+  //                 },
+  //               },
+  //               orderBy: {
+  //                 session_date: 'desc',
+  //               },
+  //               take: 1,
+  //             },
+  //           },
+  //         },
+  //         courses: {
+  //           select: {
+  //             name: true,
+  //             coursecategories: {
+  //               select: {
+  //                 name: true,
+  //               },
+  //             },
+  //           },
+  //         },
+  //       },
+  //     });
+
+  //     const consultingInformation: StudentApiResponse[] = enrollments.map(
+  //       (enrollment) => {
+  //         const s = enrollment.students!;
+  //         const course = enrollment.courses;
+  //         const assignedCounselorName = s.users?.full_name || 'N/A';
+  //         const assignedCounselorType = s.users
+  //           ? this.mapUserType(s.users.user_type)
+  //           : 'N/A';
+
+  //         const interestedCoursesDetails =
+  //           s.student_interested_courses.length > 0
+  //             ? s.student_interested_courses
+  //                 .map(
+  //                   (sic) =>
+  //                     `${sic.courses.coursecategories.name} - ${
+  //                       sic.courses.name
+  //                     } (Mô tả: ${sic.courses.description || 'N/A'})`
+  //                 )
+  //                 .join(';\n')
+  //             : null;
+
+  //         const studentStatusHistory =
+  //           s.studentstatushistory.length > 0
+  //             ? s.studentstatushistory
+  //                 .map((ssh) => {
+  //                   const oldStatusMapped = this.mapOldStatusHistory(
+  //                     ssh.old_status
+  //                   );
+  //                   const newStatusMapped = this.mapNewStatusHistory(
+  //                     ssh.new_status
+  //                   );
+  //                   const notesPart = ssh.notes
+  //                     ? `, Ghi chú: ${ssh.notes}`
+  //                     : '';
+  //                   return `Từ: ${oldStatusMapped} Đến: ${newStatusMapped} (Ngày: ${this.formatDateTime(
+  //                     ssh.change_date
+  //                   )}, Bởi: ${ssh.users.full_name}${notesPart})`;
+  //                 })
+  //                 .join(';\n')
+  //             : '';
+
+  //         const latestConsultation = s.consultationsessions[0] || null;
+
+  //         return {
+  //           student_id: s.id,
+  //           student_name: s.student_name,
+  //           email: s.email || '',
+  //           phone_number: s.phone_number,
+  //           gender: s.gender,
+  //           zalo_phone: s.zalo_phone || '',
+  //           link_facebook: s.link_facebook || '',
+  //           date_of_birth: this.formatDate(s.date_of_birth) || '',
+  //           current_education_level: this.mapEducationLevel(
+  //             s.current_education_level
+  //           ),
+  //           other_education_level_description:
+  //             s.other_education_level_description,
+  //           high_school_name: s.high_school_name || '',
+  //           city: s.city || '',
+  //           source: this.mapSource(s.source),
+  //           other_source_description: s.other_source_description,
+  //           notification_consent: this.mapNotificationConsent(
+  //             s.notification_consent
+  //           ),
+  //           other_notification_consent_description:
+  //             s.other_notification_consent_description,
+  //           current_status: this.mapStudentStatus(s.current_status),
+  //           status_change_date: this.formatDateTime(s.status_change_date) || '',
+  //           registration_date: this.formatDate(s.registration_date),
+  //           student_created_at: this.formatDateTime(s.created_at) || '',
+  //           student_updated_at: this.formatDateTime(s.updated_at) || '',
+  //           assigned_counselor_name: assignedCounselorName,
+  //           assigned_counselor_type: assignedCounselorType,
+  //           interested_courses_details: interestedCoursesDetails,
+  //           enrolled_courses_details: `${course.coursecategories.name} - ${
+  //             course.name
+  //           } (Ngày đăng ký: ${this.formatDate(
+  //             enrollment.enrollment_date
+  //           )}, Phí đã trả: ${enrollment.fee_paid.toFixed(2)})`,
+  //           student_status_history: studentStatusHistory,
+  //           last_consultation_date: latestConsultation
+  //             ? this.formatDateTime(latestConsultation.session_date)
+  //             : null,
+  //           last_consultation_duration_minutes:
+  //             latestConsultation?.duration_minutes || null,
+  //           last_consultation_notes: latestConsultation?.notes || null,
+  //           last_consultation_type: latestConsultation
+  //             ? this.mapConsultationSessionType(latestConsultation.session_type)
+  //             : null,
+  //           last_consultation_status: latestConsultation
+  //             ? this.mapConsultationSessionStatus(
+  //                 latestConsultation.session_status
+  //               )
+  //             : null,
+  //           last_consultation_counselor_name:
+  //             latestConsultation?.users.full_name || null,
+  //         };
+  //       }
+  //     );
+
+  //     const metadata = paginator.getMetadata(totalEnrollments);
+
+  //     return {
+  //       consultingInformation,
+  //       metadata,
+  //     };
+  //   } catch (error: any) {
+  //     console.error('Lỗi nghiêm trọng:', error.message || error);
+  //     throw error;
+  //   }
+  // }
 
   // async getAllConsultingInformationByCounselor(
   //   assigned_counselor_id: number,
@@ -793,13 +1045,28 @@ class ConsultingInformationManagementService {
 
       const excludeStatusCondition = {
         NOT: {
-          current_status: 'Registered' as students_current_status,
+          // current_status: 'Registered' as students_current_status,
         },
       };
 
+      const whereAssigned_counselor_id: any = {}; // hoặc `Record<string, any>` nếu muốn rõ type
+
+      const userType = await prisma.users.findUnique({
+        where: {
+          id: assigned_counselor_id,
+        },
+        select: {
+          user_type: true,
+        },
+      });
+      if (userType?.user_type === 'counselor') {
+        whereAssigned_counselor_id.assigned_counselor_id =
+          assigned_counselor_id;
+      }
+
       const totalConsultingInformationCount = await prisma.students.count({
         where: {
-          assigned_counselor_id: assigned_counselor_id,
+          ...whereAssigned_counselor_id,
           ...excludeStatusCondition,
         },
       });
@@ -818,7 +1085,7 @@ class ConsultingInformationManagementService {
 
       const studentsWithDetails = await prisma.students.findMany({
         where: {
-          assigned_counselor_id: assigned_counselor_id,
+          ...whereAssigned_counselor_id,
           ...excludeStatusCondition,
         },
         skip: offset,
@@ -895,7 +1162,7 @@ class ConsultingInformationManagementService {
               },
             },
             orderBy: {
-              change_date: 'asc',
+              id: 'desc',
             },
           },
           consultationsessions: {
@@ -912,7 +1179,7 @@ class ConsultingInformationManagementService {
               },
             },
             orderBy: {
-              session_date: 'desc',
+              id: 'desc',
             },
             take: 1,
           },
@@ -1288,13 +1555,29 @@ class ConsultingInformationManagementService {
       // Khởi tạo Paginator
       const paginator = new Paginator(page, limit);
       const offset = paginator.offset;
-      const validLimit = paginator.limit; // Sử dụng limit đã được validate bởi Paginator
+      // const validLimit = paginator.limit; // Sử dụng limit đã được validate bởi Paginator
+
+      const whereAssigned_counselor_id: any = {}; // hoặc `Record<string, any>` nếu muốn rõ type
+      const wherecounselorId: any = {}; // hoặc `Record<string, any>` nếu muốn rõ type
+
+      const userType = await prisma.users.findUnique({
+        where: {
+          id: counselorId,
+        },
+        select: {
+          user_type: true,
+        },
+      });
+      if (userType?.user_type === 'counselor') {
+        whereAssigned_counselor_id.assigned_counselor_id = counselorId;
+        wherecounselorId.counselor_id = counselorId;
+      }
 
       // Bước 1: Tìm tất cả học sinh được gán cho người tư vấn này
       // Không phân trang ở đây vì chúng ta cần tất cả student_id để lọc consultation sessions
       const students = await prisma.students.findMany({
         where: {
-          assigned_counselor_id: counselorId,
+          ...whereAssigned_counselor_id,
         },
         select: {
           id: true,
@@ -1317,7 +1600,7 @@ class ConsultingInformationManagementService {
             student_id: {
               in: studentIds,
             },
-            counselor_id: counselorId,
+            ...wherecounselorId,
           },
         });
 
@@ -1336,10 +1619,10 @@ class ConsultingInformationManagementService {
       // Bước 2b: Lấy các phiên tư vấn đã được phân trang
       const consultationSessions = await prisma.consultationsessions.findMany({
         where: {
-          student_id: {
-            in: studentIds,
-          },
-          counselor_id: counselorId,
+          // student_id: {
+          //   in: studentIds,
+          // },
+          ...wherecounselorId,
         },
         select: {
           id: true,
@@ -1366,7 +1649,7 @@ class ConsultingInformationManagementService {
           session_date: 'desc',
         },
         skip: offset, // Áp dụng offset từ Paginator
-        take: validLimit, // Áp dụng limit từ Paginator
+        // take: validLimit, // Áp dụng limit từ Paginator
       });
 
       // Bước 3: Ánh xạ dữ liệu sang định dạng ConsultationHistory
@@ -1441,7 +1724,27 @@ class ConsultingInformationManagementService {
         };
       }
 
-      if (counselorId !== undefined && counselorId !== null) {
+      if (!counselorId) {
+        return {
+          consultingInformation: [],
+          metadata: new Paginator(1, limit).getMetadata(0),
+        };
+      }
+
+      const userType = await prisma.users.findUnique({
+        where: {
+          id: counselorId,
+        },
+        select: {
+          user_type: true,
+        },
+      });
+
+      if (
+        counselorId !== undefined &&
+        counselorId !== null &&
+        userType?.user_type === 'counselor'
+      ) {
         whereClause.assigned_counselor_id = counselorId;
         console.log(
           `Service: Filtering by assigned_counselor_id: ${counselorId}`
@@ -1883,15 +2186,15 @@ class ConsultingInformationManagementService {
       }
 
       let counselorChanged = false;
-      if (
-        updateData.assigned_counselor_id !== undefined &&
-        existingStudent.assigned_counselor_id !==
-          updateData.assigned_counselor_id
-      ) {
-        dataToUpdate.assigned_counselor_id = updateData.assigned_counselor_id;
-        hasStudentChanges = true;
-        counselorChanged = true;
-      }
+      // if (
+      //   updateData.assigned_counselor_id !== undefined &&
+      //   existingStudent.assigned_counselor_id !==
+      //     updateData.assigned_counselor_id
+      // ) {
+      //   dataToUpdate.assigned_counselor_id = updateData.assigned_counselor_id;
+      //   hasStudentChanges = true;
+      //   counselorChanged = true;
+      // }
 
       let statusChanged = false;
       let oldStatus = existingStudent.current_status;
@@ -2019,23 +2322,26 @@ class ConsultingInformationManagementService {
               counselorIdForNewSession = counselor.id;
             }
           }
+          const Train = true;
+          if (!Train) {
+            await prisma.consultationsessions.create({
+              data: {
+                student_id: studentId,
+                counselor_id: counselorIdForNewSession,
+                session_date: updateData.last_consultation_date
+                  ? new Date(updateData.last_consultation_date)
+                  : new Date(),
+                session_type: (updateData.last_consultation_type ||
+                  'Phone_Call') as consultationsessions_session_type,
+                session_status: (updateData.last_consultation_status ||
+                  'Scheduled') as consultationsessions_session_status,
+                notes: updateData.last_consultation_notes || '',
+                duration_minutes:
+                  updateData.last_consultation_duration_minutes || null,
+              },
+            });
+          }
 
-          await prisma.consultationsessions.create({
-            data: {
-              student_id: studentId,
-              counselor_id: counselorIdForNewSession,
-              session_date: updateData.last_consultation_date
-                ? new Date(updateData.last_consultation_date)
-                : new Date(),
-              session_type: (updateData.last_consultation_type ||
-                'Phone_Call') as consultationsessions_session_type,
-              session_status: (updateData.last_consultation_status ||
-                'Scheduled') as consultationsessions_session_status,
-              notes: updateData.last_consultation_notes || '',
-              duration_minutes:
-                updateData.last_consultation_duration_minutes || null,
-            },
-          });
           // After creating a new consultation, the `updatedStudent` object
           // fetched earlier might not have this new session.
           // To ensure the final returned object reflects the *latest* state,
@@ -2171,24 +2477,27 @@ class ConsultingInformationManagementService {
           }
         }
 
-        // 6. Tạo consultation session mới nếu counselor thay đổi (và chưa có consultation update từ updateData)
-        if (
-          counselorChanged &&
-          updateData.assigned_counselor_id &&
-          !needUpdateConsultation // Only create if consultation wasn't already handled by updateData
-        ) {
-          await prisma.consultationsessions.create({
-            data: {
-              counselor_id: updateData.assigned_counselor_id,
-              student_id: studentId,
-              session_date: new Date(),
-              session_type: 'Phone_Call',
-              session_status: 'Scheduled',
-              notes: `Counselor assignment changed. New consultation scheduled.`,
-              duration_minutes: null,
-            },
-          });
+        const res = true;
+        if (!res) {
+          if (
+            counselorChanged &&
+            updateData.assigned_counselor_id &&
+            !needUpdateConsultation // Only create if consultation wasn't already handled by updateData
+          ) {
+            await prisma.consultationsessions.create({
+              data: {
+                counselor_id: updateData.assigned_counselor_id,
+                student_id: studentId,
+                session_date: new Date(),
+                session_type: 'Phone_Call',
+                session_status: 'Scheduled',
+                notes: `Counselor assignment changed. New consultation scheduled.`,
+                duration_minutes: null,
+              },
+            });
+          }
         }
+        // 6. Tạo consultation session mới nếu counselor thay đổi (và chưa có consultation update từ updateData)
 
         // 7. Auto-enrollment nếu trạng thái chuyển thành 'Registered'
         if (
@@ -2205,23 +2514,22 @@ class ConsultingInformationManagementService {
             const interestedCourses =
               existingStudent.student_interested_courses;
             if (interestedCourses.length > 0) {
-              const enrollments = interestedCourses.map((sic) => ({
-                student_id: studentId,
-                course_id: sic.course_id,
-                enrollment_date: new Date(),
-                fee_paid: 0,
-                payment_status: 'Pending' as any,
-                counselor_id:
-                  updateData.assigned_counselor_id ||
-                  existingStudent.assigned_counselor_id ||
-                  updatedByUserId,
-                notes: 'Auto-enrolled when status changed to Registered',
-              }));
-
-              await prisma.studentenrollments.createMany({
-                data: enrollments,
-                skipDuplicates: true,
-              });
+              // const enrollments = interestedCourses.map((sic) => ({
+              //   student_id: studentId,
+              //   course_id: sic.course_id,
+              //   enrollment_date: new Date(),
+              //   fee_paid: 0,
+              //   payment_status: 'Pending' as any,
+              //   counselor_id:
+              //     updateData.assigned_counselor_id ||
+              //     existingStudent.assigned_counselor_id ||
+              //     updatedByUserId,
+              //   notes: 'Auto-enrolled when status changed to Registered',
+              // }));
+              // await prisma.studentenrollments.createMany({
+              //   data: enrollments,
+              //   skipDuplicates: true,
+              // });
             }
           }
         }
@@ -2378,7 +2686,7 @@ class ConsultingInformationManagementService {
         student.other_education_level_description || '',
       high_school_name: student.high_school_name || '',
       city: student.city || '',
-      source: student.source,
+      source: student.source || '',
       notification_consent: student.notification_consent,
       other_source_description: student.other_source_description || '',
       other_notification_consent_description:
