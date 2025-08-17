@@ -8,6 +8,8 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from 'recharts';
+import { Activity } from 'lucide-react';
+
 import {
   Card,
   CardHeader,
@@ -120,7 +122,11 @@ export function ConsultationDurationAreaChart({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{title || 'Phân tích thời lượng tư vấn'}</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <Activity className="h-5 w-5" />
+          {title || 'Phân tích thời lượng tư vấn'}
+        </CardTitle>
+
         <CardDescription>
           {description ||
             `Biểu đồ dao động trung bình thời lượng tư vấn chia theo ${bucketCount} mốc thời gian`}

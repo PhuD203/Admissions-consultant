@@ -190,6 +190,8 @@ export default function Page() {
       setIsSuccess(true);
       setTimeout(() => setIsSuccess(false), 2000);
       setTimeout(() => setisErrorAlert(false), 2000);
+
+      window.location.reload();
     } catch (error: any) {
       console.error('Create user failed:', error);
     }
@@ -308,9 +310,9 @@ export default function Page() {
                           <option value="manager">
                             {translateUserType('manager')}
                           </option>
-                          <option value="admin">
+                          {/* <option value="admin">
                             {translateUserType('admin')}
-                          </option>
+                          </option> */}
                         </select>
                       </div>
                       {/* Chương trình */}
@@ -331,7 +333,10 @@ export default function Page() {
                           <option value="">Chọn chương trình</option>
                           <option value="Aptech">Aptech</option>
                           <option value="Arena">Arena</option>
-                          <option value="SmartPro">SmartPro</option>
+                          <option value="Short_term___Steam">
+                            {' '}
+                            Short term + Steam
+                          </option>
                         </select>
                       </div>
                       {/* Nút lưu */}

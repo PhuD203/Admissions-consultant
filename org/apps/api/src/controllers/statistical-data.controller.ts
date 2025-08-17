@@ -13,6 +13,8 @@ import {
   countStudentsByStatus,
   countConsultationSessionsByType,
   getAllConsultationSessions,
+  GetCountEnrollments,
+  GetStudentRegistrationDistribution,
 } from '../services/data.service';
 // import studentEnrollmentService from '../services/student-enrollment.service';
 // import { students_current_education_level } from '@prisma/client';
@@ -49,6 +51,24 @@ export class StudentStatistical {
         endDate,
         users,
       });
+
+      const EnrollmentStats = await GetCountEnrollments({
+        counselorId,
+        educationLevel,
+        startDate,
+        endDate,
+        users,
+      });
+
+      const DistributionRegistration = await GetStudentRegistrationDistribution(
+        {
+          counselorId,
+          educationLevel,
+          startDate,
+          endDate,
+          users,
+        }
+      );
 
       const allSession_time = await getAllConsultationSessions({
         counselorId,
@@ -204,7 +224,9 @@ export class StudentStatistical {
         jsend.success({
           result,
           allSession_time,
+          EnrollmentStats,
           statusMap,
+          DistributionRegistration,
         })
       );
     } catch (e: any) {

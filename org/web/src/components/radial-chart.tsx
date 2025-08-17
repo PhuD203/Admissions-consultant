@@ -17,6 +17,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
+import { Activity } from 'lucide-react';
 
 // Type definitions for the API data structure
 interface CampaignData {
@@ -79,7 +80,10 @@ export function RadialChartStacked({ data }: RadialChartStackedProps) {
     return (
       <Card className="flex flex-col">
         <CardHeader className="items-center pb-0">
-          <CardTitle>Hiệu quả chiến dịch</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            Hiệu quả chiến dịch
+          </CardTitle>
           <CardDescription>Đang tải dữ liệu...</CardDescription>
         </CardHeader>
         <CardContent className="flex-1 pb-0">
@@ -118,7 +122,10 @@ export function RadialChartStacked({ data }: RadialChartStackedProps) {
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Hiệu quả chiến dịch</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <Activity className="h-5 w-5" />
+          Hiệu quả chiến dịch
+        </CardTitle>
         <CardDescription>{data.summary.period}</CardDescription>
       </CardHeader>
       <div className="mt-4 flex flex-wrap justify-center gap-4 text-sm">

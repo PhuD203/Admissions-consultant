@@ -836,6 +836,149 @@ export async function getAllConsultationSessions({
   }));
 }
 
+export async function GetCountEnrollments({
+  counselorId,
+  educationLevel,
+  startDate,
+  endDate,
+  users,
+}: {
+  counselorId?: number;
+  educationLevel?: string;
+  startDate?: Date;
+  endDate?: Date;
+  users?: string;
+}) {
+  const userType = await prisma.users.findUnique({
+    where: { id: counselorId },
+    select: { user_type: true },
+  });
+
+  const userIdFromName = users ? await getUserIdByName(users) : null;
+
+  const stats = await prisma.studentenrollments.groupBy({
+    by: ['course_id'],
+    where: {
+      ...(counselorId &&
+        userType?.user_type === 'counselor' && {
+          counselor_id: counselorId,
+        }),
+      ...(startDate && {
+        created_at: {
+          gte: startDate,
+        },
+      }),
+      ...(endDate && {
+        created_at: {
+          ...(startDate ? { gte: startDate } : {}),
+          lte: endDate,
+        },
+      }),
+      ...(educationLevel && {
+        students: {
+          current_education_level:
+            educationLevel as students_current_education_level,
+        },
+      }),
+      ...(userIdFromName && { counselor_id: userIdFromName }),
+    },
+    _count: {
+      course_id: true,
+    },
+  });
+
+  // Gán tên môn học từ bảng courses
+  const result = await Promise.all(
+    stats.map(async (stat) => {
+      const course = await prisma.courses.findUnique({
+        where: {
+          id: stat.course_id,
+        },
+        select: {
+          name: true,
+        },
+      });
+
+      return {
+        subject: course?.name ?? 'Không rõ',
+        count: stat._count.course_id,
+      };
+    })
+  );
+
+  return result;
+}
+
+export async function GetStudentRegistrationDistribution({
+  counselorId,
+  educationLevel,
+  startDate,
+  endDate,
+  users,
+}: {
+  counselorId?: number;
+  educationLevel?: string;
+  startDate?: Date;
+  endDate?: Date;
+  users?: string;
+}) {
+  const userType = await prisma.users.findUnique({
+    where: { id: counselorId },
+    select: { user_type: true },
+  });
+
+  const userIdFromName = users ? await getUserIdByName(users) : null;
+
+  // Group by student_id để đếm số môn học mỗi học viên đã đăng ký
+  const studentEnrollments = await prisma.studentenrollments.groupBy({
+    by: ['student_id'],
+    where: {
+      ...(counselorId &&
+        userType?.user_type === 'counselor' && {
+          counselor_id: counselorId,
+        }),
+      ...(userIdFromName && {
+        counselor_id: userIdFromName,
+      }),
+      ...(startDate && {
+        created_at: {
+          gte: startDate,
+        },
+      }),
+      ...(endDate && {
+        created_at: {
+          ...(startDate ? { gte: startDate } : {}),
+          lte: endDate,
+        },
+      }),
+      ...(educationLevel && {
+        students: {
+          current_education_level:
+            educationLevel as students_current_education_level,
+        },
+      }),
+    },
+    _count: {
+      course_id: true,
+    },
+  });
+
+  // Tính số lượng sinh viên theo số môn đã đăng ký
+  let onlyRegister = 0;
+  let ManyRegister = 0;
+
+  for (const student of studentEnrollments) {
+    const courseCount = student._count.course_id;
+    if (courseCount === 1) onlyRegister++;
+    else if (courseCount > 1) ManyRegister++;
+  }
+
+  return {
+    onlyRegister,
+    ManyRegister,
+  };
+}
+
 export const getUserInfoById = async (
   id: number
 ): Promise<{ full_name: string; user_type: string; email: string } | null> => {
@@ -858,6 +1001,9 @@ export const getUsersPage = async (page: number, limit: number) => {
     prisma.users.findMany({
       skip,
       take: limit,
+      orderBy: {
+        id: 'desc',
+      },
       select: {
         id: true,
         email: true,
